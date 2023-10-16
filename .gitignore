@@ -6,3 +6,8 @@ model1
 omc3
 *.tfs
 venv
+pres*/*.aux
+pres*/*.toc
+pres*/*.log
+pres*/*.nav
+pres*/*.pdf
