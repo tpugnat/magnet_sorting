@@ -39,8 +39,8 @@ exec,check_ip(b2);
 use, sequence=LHCB1;
 twiss;
 
-exec, do_twiss_monitors(lhcb1, "model1/twiss.dat");
-exec, do_twiss_elements(lhcb1, "model1/twiss_elements.dat");
+exec, do_twiss_monitors(lhcb1, "../model1/twiss.dat");
+exec, do_twiss_elements(lhcb1, "../model1/twiss_elements.dat");
 
 ! model
 use, sequence=lhcb1;

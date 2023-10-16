@@ -8,7 +8,7 @@ call,file="../acc-models-lhc/toolkit/macro.madx";
 call, file = "../macros/general.macros.madx";
 call, file = "../macros/lhc.macros.madx";
 call, file = "../macros/lhc.macros.run3.madx";
-call, file = "../observation_points.madx";
+call, file = "../macros/observation_points.madx";
 
 ! --------------------------------------------------------------------------------------------------
 

@@ -55,7 +55,7 @@ def main():
     """
     """
 
-    for i in range(1000):
+    for i in range(1):
         do_analysis()
 
 
@@ -66,7 +66,8 @@ def do_analysis():
 
     try:
         check1, err1, diff1 = do_sim(q1_errors, q2_errors)
-    except:
+    except Exception as e:
+        print(e)
         return
 
     def sort_and_sim(score_fun, summ_filename):
@@ -168,11 +169,11 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
 
         print("running madx")
 
-        q2_errors.write_errors_to_file("errors_Q2.madx")
-        q1_errors.write_errors_to_file("errors_Q1.madx")
+        q2_errors.write_errors_to_file("model/errors_Q2.madx")
+        q1_errors.write_errors_to_file("model/errors_Q1.madx")
 
         template_file = open("job.inj.madx", "r")
-        jobfile = open("run_job.inj.madx", "w")
+        jobfile = open("model/run_job.inj.madx", "w")
         jobfile.write(template_file.read().replace("_TRACK_", "0")) # no tracking
         template_file.close()
         jobfile.close()
@@ -181,7 +182,7 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
         system(f"rm {MODEL_TWISS}")
 
         with open(os.devnull, "w") as devnull:
-            Popen([MADX, "run_job.inj.madx"], stdout=devnull, cwd="model").wait()
+            Popen([MADX, "run_job.inj.madx"], cwd="model").wait()
 
         if not os.path.exists(f"{MODEL_TWISS}"):
             raise RuntimeError("twiss_err_b1.tfs does not exist")
@@ -198,7 +199,7 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
     if DO_FR:
         print("creating response entrypoint")
         create_response_entrypoint(
-            outfile_path=Path("/home/awegsche/fellow/40_magnet_sorting/model1/FullResponse.h5"),
+            outfile_path=Path("model1/FullResponse.h5"),
             creator="madx",
             optics_params=['PHASEX', 'PHASEY', 'BETX', 'BETY', 'Q'],
             variable_categories=VAR_CATS,

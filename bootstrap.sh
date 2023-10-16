@@ -1,15 +1,39 @@
 #!/bin/bash
 
+
+MAGNET_SORTING="$(pwd -P)"
+
+
+# --- setup python ---------------------------------------------------------------------------------
 python3 -m venv venv
 . venv/bin/activate
 
-pip install omc3 matplotlib numpy
+pip install matplotlib numpy
+
+git clone git@github.com:pylhc/omc3.git
+
+cd omc3
+git checkout enhancement/292/modelcreation
+
+cd ..
+pip install -e omc3
+
+# --- setup model output ---------------------------------------------------------------------------
+mkdir model
 
 cd model
-ln -s ../macros macros
+ln -s ${MAGNET_SORTING}/macros macros
 git clone ssh://git@gitlab.cern.ch:7999/acc-models/acc-models-lhc.git
 cd acc-models-lhc
 git checkout hl16
+touch knobs.madx
 cd ../..
 
+mkdir model1
+cd model1
+ln -s ${MAGNET_SORTING}/macros macros
+ln -s ${MAGNET_SORTING}/model/acc-models-lhc acc-models-lhc
+touch knobs.madx
+cd ..
 
+echo "pwd = ${MAGNET_SORTING}"
