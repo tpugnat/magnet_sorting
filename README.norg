@@ -1,0 +1,176 @@
+@document.meta
+title: Magnet Sorting for HL-LHC
+categories: HL fellow magnet sorting
+@end
+
+.toc
+
+* Intro
+
+** Quick links
+
+   - Current progress can be found hereafter
+   - {*** History} gives an overview over studies already done
+   - {https://lhc-div-mms.web.cern.ch/tests/MAG/Fidel/}[FiDeL homepage]
+   - {https://edms.cern.ch/document/LHC-LM-ED-0001/1.0/approvalAndComments}[Magnet sorting Decision]
+   - {* MADX Lattice} info
+
+
+** Current progress
+
+   - defined steps to take with Massimo
+   - {** Error distribution} defines how the errors are created
+   - run many {** Simulations} with different magnet errors
+   - get global corrections from {** Full Response}
+
+*** Many simulations result
+
+    - some correlation visible for high bbeat
+    - low bbeat at Q2a + Q2b less significant
+
+*** Global corrections sims
+    - shows good improvement for bbeat by sorting and pairing
+    - shows also good improvement for corr
+    - both seem correlated (luckily, now we can fix both in one go)
+
+
+
+*** ( ) run simulations with 'idealised' corrections: 
+   - i.e. calc corrections by hand / using mad-x
+   - plug $I$ into transfer functions
+   - repeat tracking and measure betabeat
+ 
+
+*** History
+
+   - Jaime: study on correctability, long time ago. showed that a tiny deviation from optimal could
+     already be a problem.
+   - Global correction: not good for triplet (global factor?)
+   - Hectors work on magnet sorting:
+     {https://indico.cern.ch/event/966436/}[first talk],
+     {https://indico.cern.ch/event/981399/contributions/4133558/attachments/2155655/3635867/HL_inner_triplet_prediction.pdf}[second talk] (with ML),
+     {https://indico.cern.ch/event/1019508/contributions/4278837/attachments/2211355/3742617/Reinforcement_learning_for_IR_local_optics_correction%20(1).pdf}[third talk] (more ML),
+
+*** Possible Tasks
+
+   - create a global corrections script, taking a global factor into account
+       - corrections from twiss
+       - add parameter to FR? YES
+   - check which correction method is the best (SbS, global+factor, APJ?, ML?)    
+   - decide if sorting is needed after all
+
+*** Parameters
+
+   - measured magnet strengths
+   - aperture?
+   - beta beating
+   - required correction strengths (pc limits?, K limits?)
+
+*** Immediate tasks:
+
+   - check corrections.py - can we get corrections from twiss?  YES   
+   - start some simulations, get overview of beta beating 6-10%
+
+*** result from meeting with massimo
+
+**** Constraints
+
+     - probably only Q2 pairing possible,
+     - possibly Q1, Q2, Q3 sorting between different IPs same side
+   
+
+**** Notation
+ 
+     Pairing: A <-> B
+     Sorting: Q1IP1 <-> Q1IP5
+
+
+**** Merit
+
+     - sorting: could improve beta beating
+     - pairing: could improve correctability
+  
+ 
+     Aperture / tolerances: try simulating sorting for aperture
+
+* Work Details
+
+** Error distribution
+
+   The following files contain functions to create error distributions for the triplet magnets:
+   {/ sortq1withuncertainty.py}
+   {/ sortq2withuncertainty.py}
+   {/ sortq3withuncertainty.py}
+
+   can be used like this:
+
+   @code python
+   import sortq1withuncertainty
+   import sortq2withuncertainty
+   import sortq3withuncertainty
+
+   sortq1withuncertainty.main(
+       amp_real_error = 10,
+       amp_meas_error = 2
+   )
+
+   # similar for the others
+   sortq2withuncertainty.main()
+   sortq3withuncertainty.main()
+   @end
+
+
+
+** Simulations
+
+  Script: {/ do_analysis.py}
+
+  @code shell
+  . venv/bin/activate.fish
+  python do_analysis.py
+  @end
+
+  will run a couple of simulations, implementing random errors in the magnets
+
+  @code
+    usage: do_analysis.py [-h] [--reset] [--num NUM]
+
+    optional arguments:
+      -h, --help         show this help message and exit
+      --reset            deletes summary files
+      --num NUM, -n NUM  number of simulation runs. Defaul=1
+  @end
+
+** Full Response
+
+  The script {/ do_global_corrections.py} will run a global correction, using only the triplet
+  powerings.
+
+  call it like this:
+
+  @code shell
+  . venv/bin/activate.fish
+  python do_global_corrections.py
+  @end
+
+*** ( ) Next steps: 
+   - check corrections of that (i.e. compare the twiss of the ideal model + changeparameters.madx
+     with the error twiss
+   - now do some large scale simulations to see how sorting / pairing impacts the quality
+
+* MADX lattice
+
+  root: {/ acc-models-lhc}
+
+  
+** Triplet
+
+   Q1ab, Q2a, Q2b, Q3ab
+
+   defined in {/ acc-models-lhc/hllhc_sequence.madx:420}
+
+*** ( ) Powering
+    task: please check if Q2a/b might be powered individually
+
+#comment
+  vim:tw=100:ft=norg:norl:conceallevel=2:concealcursor=:
