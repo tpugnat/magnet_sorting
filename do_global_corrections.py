@@ -182,7 +182,7 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
         system(f"rm {MODEL_TWISS}")
 
         with open(os.devnull, "w") as devnull:
-            Popen([MADX, "run_job.inj.madx"], cwd="model").wait()
+            Popen([MADX, "run_job.inj.madx"], stdout=devnull, cwd="model").wait()
 
         if not os.path.exists(f"{MODEL_TWISS}"):
             raise RuntimeError("twiss_err_b1.tfs does not exist")
