@@ -1,0 +1,8 @@
+__pycache__
+fake_measurements
+global_corrections
+model
+model1
+omc3
+*.tfs
+venv
