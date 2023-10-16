@@ -1,0 +1,34 @@
+
+
+option,-echo,-info;
+call,file="../acc-models-lhc/lhc.seq";
+call,file="../acc-models-lhc/hllhc_sequence.madx";
+call,file="../acc-models-lhc/toolkit/macro.madx";
+
+call, file = "../macros/general.macros.madx";
+call, file = "../macros/lhc.macros.madx";
+call, file = "../macros/lhc.macros.run3.madx";
+call, file = "../observation_points.madx";
+
+! --------------------------------------------------------------------------------------------------
+
+exec,mk_beam(450);
+
+!call,file="acc-models-lhc/strengths/ramp/opt_ramp_6000_thin.madx";
+call,file="../acc-models-lhc/strengths/ramp/opt_ramp_500_1500_thin.madx";
+exec, myslice;
+
+exec,check_ip(b1);
+exec,check_ip(b2);
+
+! model
+use, sequence=lhcb1;
+exec, do_twiss_monitors(lhcb1, "twiss_model_b1.tfs", 0);
+
+! predict errors from global_corrs
+call, file = "../global_corrections/changeparameters_iter.madx";
+exec, do_twiss_monitors(lhcb1, "twiss_global_b1.tfs", 0);
+select, flag=error, clear;
+select, flag=error, pattern="MQXFB\.[AB]2.*";
+
+stop;
