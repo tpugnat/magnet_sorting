@@ -5,9 +5,11 @@ import numpy as np
 BINS = 40
 
 STEP = 0.1
+BLUE_INNER = "#5080F0"
+BLUE_OUTER = "#000080"
 
 print("=== Sum ================================")
-summ = tfs.read("summ_sum.tfs")
+summ = tfs.read("backup/summ_sum.tfs")
 
 print("CORR")
 print(summ["CORR_AFTER"]/summ["CORR"])
@@ -25,18 +27,20 @@ print("CORR < 0")
 print(len(data_under)/len(data)) 
 
 plt.hist(data_under,
-         label="CORR",
-         color="#5050F0",
-         edgecolor="#000080",
+         label="corr (improving)",
+         color=BLUE_INNER,
+         edgecolor=BLUE_OUTER,
          histtype="stepfilled",
          bins=np.arange(0, 1.1, STEP))
 
 plt.hist(data_over,
-         label="CORR",
+         label="corr (deteriorating)",
          color="#F05050",
          edgecolor="#800000",
          histtype="stepfilled",
          bins=np.arange(1, 8, STEP))
+plt.xlabel("relative $\\beta$ beating")
+plt.ylabel("Frequency")
 plt.legend()
 plt.savefig("corr.pdf")
 
@@ -48,7 +52,7 @@ print(f"improv: {len(data_under)}")
 print(f"deteri: {len(data_over)}")
 
 print("=== Dif ================================")
-summ = tfs.read("summ_diff.tfs")
+summ = tfs.read("backup/summ_diff.tfs")
 
 data = summ["CORR_AFTER"]/summ["CORR"]
 
