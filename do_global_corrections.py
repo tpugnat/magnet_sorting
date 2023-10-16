@@ -15,6 +15,7 @@ import pandas as pd
 from typing import List, Union, Tuple
 
 MADX = "/home/awegsche/programs/madx/madx-gnu64"
+MODEL_TWISS = "model/twiss_err_b1.tfs"
 EFILE =  "./table_corrections_Q2.madx"
 SEED = 0
 VAR_CATS = [
@@ -177,12 +178,12 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
         jobfile.close()
 
         # remove twiss output, its existance after running madx indicates success
-        system(f"rm twiss_err_b1.tfs")
+        system(f"rm {MODEL_TWISS}")
 
         with open(os.devnull, "w") as devnull:
-            Popen([MADX, "run_job.inj.madx"], stdout=devnull).wait()
+            Popen([MADX, "run_job.inj.madx"], stdout=devnull, cwd="model").wait()
 
-        if not os.path.exists("twiss_err_b1.tfs"):
+        if not os.path.exists(f"{MODEL_TWISS}"):
             raise RuntimeError("twiss_err_b1.tfs does not exist")
             
 
@@ -207,7 +208,7 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
 
 
     # fake measurement
-    fake_measurement(twiss="twiss_err_b1.tfs",
+    fake_measurement(twiss=MODEL_TWISS,
                      model="model1/twiss.dat",
                      outputdir="fake_measurements")
 
@@ -232,7 +233,7 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
 
     # compare
     check_twiss = tfs.read("global_corrections/twiss_global_b1.tfs")
-    err_twiss = tfs.read("twiss_err_b1.tfs")
+    err_twiss = tfs.read(MODEL_TWISS)
     model_twiss = tfs.read("model1/twiss.dat")
 
     #plt.plot(check_twiss["S"], check_twiss["BETX"]/model_twiss["BETX"]-1, label="check")
