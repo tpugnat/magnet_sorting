@@ -1,0 +1,104 @@
+\documentclass[usenames,dvipsnames,aspectratio=169,table]{beamer}
+%\usetheme{cern}
+\usetheme{cernomc}
+
+\usepackage{scrextend}
+\changefontsizes{8pt}
+
+% Beamer Setup ---
+\setbeamercovered{transparent=5} 
+\setbeamertemplate{navigation symbols}{} 
+
+\AtBeginSection{%
+	\begin{frame}[noframenumbering]{Outline}
+	\tableofcontents[currentsection]
+	\end{frame}
+}
+
+% Imports ---
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{unicode-math}
+\usepackage{mathtools}
+\usepackage{bm}  % bold math
+\usepackage{graphicx}
+\usepackage{grffile}  % filenames with dots 
+\usepackage{fontawesome5}
+
+\usepackage{tikz}
+\usetikzlibrary{calc}
+
+\usepackage{hyperref}
+\usepackage{siunitx}
+\usepackage{booktabs}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage[absolute,overlay]{textpos}
+
+\usepackage{fontspec}
+\usefonttheme{serif}
+%\setmainfont{STIX Two Text}
+%\setmathfont{STIX Two Math}
+\setmainfont{TeX Gyre Bonum}
+\setmathfont{TeX Gyre Bonum Math}
+
+
+% some shenanigans -------------------------------------------------------------
+\newcommand{\highl}[1]{\textbf{#1}}
+\definecolor{RunTwored}{RGB}{200,0,0}
+\definecolor{APJgreen}{RGB}{20,150,0}
+\definecolor{SbSorange}{RGB}{240,150,0}
+\newcommand{\we}{\cellcolor{blue!20!white}}
+\newcommand{\ho}{\cellcolor{red!20!white}}
+\newcommand{\wh}{\cellcolor{green!20!white}}
+\newcommand{\bonelabel}{%
+        \node at ($(b1) +(-0.13\linewidth, 0.15\linewidth)$) {\sffamily\small\textbf{Beam 1}};
+}
+\newcommand{\btwolabel}{%
+        \node at ($(b2) +(-0.13\linewidth, 0.15\linewidth)$) {\sffamily\small\textbf{Beam 2}};
+}
+
+
+
+% Meta -------------------------------------------------------------------------
+\author[awegsche]{%
+Andreas Wegscheider\\[1em]
+\centering%
+\includegraphics[width=3cm]{OMC_logo_original.pdf}%
+}
+\title[Magnet sorting]{Magnet sorting strategy}
+\logo{} 
+\titlegraphic{}
+\institute{CERN}
+\date[03.11.22]{03.11.2022}
+\subject{} 
+
+% Document ---------------------------------------------------------------------
+\begin{document}
+
+\begin{frame}
+    \titlepage
+\end{frame}
+
+
+%\begin{frame}{Full Outline}
+%\tableofcontents
+%\end{frame}
+
+%\section{Lobster Measurements}
+
+
+\begin{frame} % ------------------------------------------------------------------------------------
+    {Effect on $\beta$~beating}
+
+
+
+
+\end{frame} % --------------------------------------------------------------------------------------
+
+
+% \backcover
+
+\end{document}
