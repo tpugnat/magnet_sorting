@@ -1,0 +1,106 @@
+option, -echo, -info;
+
+call, file = "acc-models-lhc/lhc.seq";
+call, file = "acc-models-lhc/hllhc_sequence.madx";
+call, file = "acc-models-lhc/toolkit/macro.madx";
+save, file = sequence_lhc.madx;
+call, file = "macros/general.macros.madx";
+call, file = "macros/lhc.macros.madx";
+call, file = "macros/lhc.macros.run3.madx";
+call, file = "observation_points.madx";
+
+
+exec,mk_beam(7000);
+use, sequence=LHCB1;
+twiss;
+
+! call,file="acc-models-lhc/strengths/round/opt_round_150_1500.madx";  // collision, not stable with errors
+call,file="acc-models-lhc/strengths/ramp/opt_ramp_6000.madx";  // injection, 6m beta*
+use, sequence=LHCB1;
+twiss;
+
+use, sequence=LHCB1;
+twiss;
+
+exec, do_twiss_monitors(lhcb1, "model1/twiss.dat");
+exec, do_twiss_elements(lhcb1, "model1/twiss_elements.dat");
+
+do_ptc_tracking(filename): macro = {
+    PTC_CREATE_UNIVERSE;
+        PTC_CREATE_LAYOUT, model=3, method=6, nst=10;
+        PTC_ALIGN;
+        call, file="bpm.ptc_obs.madx";
+        PTC_START, x=1e-9, y=1e-9; !!!! change: kick (units m)
+        PTC_TRACK, deltap=0.0, icase=5, turns=4000, ELEMENT_BY_ELEMENT, dump, onetable, file=filename;
+        PTC_TRACK_END;
+    PTC_END;
+}
+
+
+
+!twiss, SEQUENCE = LHCB1, file=f;
+
+seqedit,sequence=lhcb1;
+    flatten;
+    cycle,start=IP3;
+    flatten;
+endedit;
+
+seqedit,
+    sequence=lhcb2;
+    flatten;
+    cycle,start=IP3;
+    flatten;
+endedit;
+
+option, info;
+! model
+use, sequence=lhcb1;
+exec, do_twiss_elements(lhcb1, "twiss_model_b1.tfs", 0);
+
+! errors 
+call, file = "./errors_Q2.madx";
+exec, do_twiss_elements(lhcb1, "twiss_err_b1.tfs", 0);
+select, flag=error, clear;
+select, flag=error, pattern="MQXFB\.[AB]2.*";
+esave, file = "./table_errors_Q2.madx";
+
+exec, match_tunes(0.28, 0.31, 1);
+exec, do_ptc_tracking("witherrors");
+exec, do_twiss_monitors(lhcb1, "twiss_err_b1_tunematched.tfs", 0);
+
+! deliberately USE to remove the errors
+use, sequence=LHCB1;
+
+! corrected 
+call, file = "./errors_Q2_corrected.madx";
+exec, do_twiss_elements(lhcb1, "twiss_corr_b1.tfs", 0);
+select, flag=error, clear;
+select, flag=error, pattern="MQXFB\.[AB]2.*";
+esave, file = "./table_corrections_Q2.madx";
+
+stop;
+
+! do the tracking
+track_file(filename): macro = {
+  ! Tracking routine, will output file named "trackone"
+  TRACK, FILE=filename, ONEPASS=True, DUMP=True, ONETABLE=TRUE; ! ONETABLE puts observation from all points in the same file (instead of one file per observation point)
+  START, X=1.0e-7, Y=1.0e-7;
+  exec, define_madx_observation_points(); ! Defined all BPMs as observation points
+  RUN, TURNS=6000;
+  !RUN, TURNS=10800;
+  ENDTRACK;
+}
+
+exec, track_file("track");
+
+
+stop;
+
+exec,check_ip(b1);
+exec,check_ip(b2);
+
+exec,mk_irtwiss(5,b1);
+exec,mk_irtwiss(5,b2);
+exec,mk_irtwiss(1,b1);
+exec,mk_irtwiss(1,b2);

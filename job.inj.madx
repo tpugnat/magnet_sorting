@@ -1,0 +1,71 @@
+
+option,-echo,-info;
+call,file="acc-models-lhc/lhc.seq";
+call,file="acc-models-lhc/hllhc_sequence.madx";
+call,file="acc-models-lhc/toolkit/macro.madx";
+
+call, file = "macros/general.macros.madx";
+call, file = "macros/lhc.macros.madx";
+call, file = "macros/lhc.macros.run3.madx";
+call, file = "macros/observation_points.madx";
+
+! --------------------------------------------------------------------------------------------------
+
+do_tracking(filename): macro = {
+  ! Tracking routine, will output file named "trackone"
+  TRACK, FILE=filename, ONEPASS=True, DUMP=True, ONETABLE=TRUE; ! ONETABLE puts observation from all points in the same file (instead of one file per observation point)
+  START, X=1.0e-7, Y=1.0e-7;
+  exec, define_madx_observation_points(); ! Defined all BPMs as observation points
+  RUN, TURNS=6000;
+  !RUN, TURNS=10800;
+  ENDTRACK;
+}
+
+do_ir_correctors(filename): macro = {
+    select, clear;
+    select, pattern="^M.*";
+}
+! --------------------------------------------------------------------------------------------------
+
+exec,mk_beam(450);
+
+!call,file="acc-models-lhc/strengths/ramp/opt_ramp_6000_thin.madx";
+call,file="acc-models-lhc/strengths/ramp/opt_ramp_500_1500_thin.madx";
+exec, myslice;
+
+exec,check_ip(b1);
+exec,check_ip(b2);
+
+use, sequence=LHCB1;
+twiss;
+
+exec, do_twiss_monitors(lhcb1, "model1/twiss.dat");
+exec, do_twiss_elements(lhcb1, "model1/twiss_elements.dat");
+
+! model
+use, sequence=lhcb1;
+exec, do_twiss_monitors(lhcb1, "twiss_model_b1.tfs", 0);
+
+! errors 
+call, file = "./errors_Q1.madx";
+call, file = "./errors_Q2.madx";
+exec, do_twiss_monitors(lhcb1, "twiss_err_b1.tfs", 0);
+
+! dump Q2 errors
+select, flag=error, clear;
+select, flag=error, pattern="MQXFB\.[AB]2.*";
+esave, file = "./table_errors_Q2.madx";
+
+! dump Q1 errors
+select, flag=error, clear;
+select, flag=error, pattern="MQXFB\.[AB]1.*";
+esave, file = "./table_errors_Q1.madx";
+
+exec, match_tunes(0.31, 0.32, 1);
+if (_TRACK_ == 1) {
+    exec, do_tracking(witherrors);
+    exec, do_twiss_monitors(lhcb1, "twiss_err_b1_tunematched.tfs", 0);
+}
+
+
+stop;

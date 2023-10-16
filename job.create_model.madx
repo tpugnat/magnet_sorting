@@ -1,0 +1,81 @@
+title, "LHC Model created by omc3";
+! Model directory: /media/awegsche/HDD1/files/fellow/13_lobster_measurements/sims/phase_beat/lhc_m1
+! Natural Tune X         [     0.280]
+! Natural Tune Y         [     0.310]
+! Best Knowledge:        [        NO]
+! Excitation             [        NO]
+
+call, file = "observation_points.madx";
+
+! Tracking routine, will output file named "trackone"
+track_file(filename): macro = {
+  TRACK, FILE=filename, ONEPASS=True, DUMP=True, ONETABLE=TRUE; ! ONETABLE puts observation from all points in the same file (instead of one file per observation point)
+  START, X=1.0e-7, Y=1.0e-7;
+  exec, define_madx_observation_points(); ! Defined all BPMs as observation points
+  RUN, TURNS=6000;
+  !RUN, TURNS=10800;
+  ENDTRACK;
+}
+
+! ----- Calling Sequence and Optics -----
+option, -echo;
+call, file = 'macros/general.macros.madx';
+call, file = 'macros/lhc.macros.madx';
+call, file = 'macros/lhc.macros.run3.madx';
+call, file = 'acc-models-lhc/lhc.seq';
+call,file="acc-models-lhc/hllhc_sequence.madx";
+exec, define_nominal_beams();
+!call, file = '/afs/cern.ch/eng/acc-models/lhc/2022/operation/optics/R2022a_A133cmC133cmA10mL200cm.madx'; !@modifier
+!call, file="knobs.madx";
+option, echo;
+
+exec, cycle_sequences();
+use, sequence = LHCB1;
+option, echo;
+
+
+twiss;
+! ----- tracking, now we turn on the orbit knob because that's the error we *want* to see
+call, file="./acc-models-lhc/toolkit/slice.madx";
+!call, file = "acc-models-lhc/strengths/ramp/opt_ramp_6000.madx";
+call,file="acc-models-lhc/strengths/round/opt_round_150_1500.madx";
+use, sequence=LHCB1;
+
+twiss;
+! ----- Twiss output without any knobs, bare machine
+!exec, coupling_knob(1);
+exec, do_twiss_monitors(LHCB1, 'twiss.dat', 0.0);
+exec, do_twiss_elements(LHCB1, 'twiss_elements.dat', 0.0);
+!exec, track_file(track1);
+
+
+! ----- Matching Knobs and Output Files -----
+exec, match_tunes(0.28, 0.31, 1);
+stop;
+! ----- knob definitions
+call, file="orbit.madx";
+call, file="kq4.madx";
+! ----- set both to zero for now
+
+on_ir7 = 1.0; // 1 is nominal value
+on_orbit = 1.0;
+
+! --- -- only orbit
+on_orbit = 2.0;
+use, sequence=LHCB1;
+
+exec, do_twiss_monitors(LHCB1, '/media/awegsche/HDD1/files/fellow/13_lobster_measurements/sims/phase_beat/lhc_m1/twiss_bump.dat', 0.0);
+exec, do_twiss_elements(LHCB1, '/media/awegsche/HDD1/files/fellow/13_lobster_measurements/sims/phase_beat/lhc_m1/twiss_elements_bump.dat', 0.0);
+
+exec, track_file("trackbump");
+
+! ----- setting the knob, this sets the ir7 betabeat knob. we want to compare different values of
+! ----- actually it's not a knob, 1.0 is nominal value, everything else is stronger / weaker and should create phase beating
+! ----- this to the trackbump output from abovee
+on_ir7 = 0.9;
+use, sequence=LHCB1;
+
+exec, do_twiss_monitors(LHCB1, '/media/awegsche/HDD1/files/fellow/13_lobster_measurements/sims/phase_beat/lhc_m1/twiss_err1.dat', 0.0);
+exec, do_twiss_elements(LHCB1, '/media/awegsche/HDD1/files/fellow/13_lobster_measurements/sims/phase_beat/lhc_m1/twiss_elements_err1.dat', 0.0);
+
+exec, track_file("trackerr1");
