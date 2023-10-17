@@ -16,6 +16,7 @@ AMP_MEAS_ERROR = 2  # Random error of measurement
 
 
 class Q2Pairs(Pairs):
+    NAME = "Q2"
     def __init__(self, real_error, meas_error):
         self.cold_masses = [MagnetError(real_error , meas_error) for _ in range(8)]
         self.selected_permutation = 0

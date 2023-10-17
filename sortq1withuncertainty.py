@@ -2,6 +2,7 @@ from magnet_errors import *
 import itertools
 from pairs import Pairs
 from typing import Tuple
+import numpy as np
 
 MAGNETS = ["MQXA.1L1", "MQXA.1R1", "MQXA.1L5", "MQXA.1R5"]
 # HL-LHC
@@ -16,6 +17,7 @@ AMP_REAL_ERROR = 50  # Full range of integrated gradient error in units
 AMP_MEAS_ERROR = 2  # Random error of measurement
 
 class Q1Pairs(Pairs):
+    NAME = "Q1"
     def __init__(self, real_error: float = AMP_REAL_ERROR, meas_error: float = AMP_MEAS_ERROR):
         self.cold_masses = [MagnetError(real_error , meas_error) for _ in range(self.get_magnet_count())]
         self.selected_permutation = 0
@@ -45,3 +47,4 @@ class Q1Pairs(Pairs):
         position = index % 2
 
         return self.cold_masses[self.positions()[bucket]*2 + position]
+

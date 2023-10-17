@@ -70,68 +70,12 @@ def do_analysis():
         print(e)
         return
 
-    def sort_and_sim(score_fun, summ_filename):
+    def sort_and_sim(summ_filename):
         """ applies the sorting, then simulates the sorted lattice, measures beta beating before
         and after corrections
         """
 
-        SKIP_Q1 = False
-        SKIP_Q2 = True
-        # ---- Q1 / Q3 errors ----------------------------------------------------------------------
-        if not SKIP_Q1:
-            print(f"searching for best combination in {len(q1_errors.permutations)} permutations")
-            print(f"using the diff method")
-
-            score = score_diff(q1_errors)
-            print(f" -- initial score: {score}")
-
-            next_progress = 0.1
-            best_comb = 0
-            
-            for i in range(len(q1_errors.permutations)):
-                if i / len(q1_errors.permutations) > next_progress:
-                    print(f"progress: {100* i / len(q1_errors.permutations):.0f} %")
-                    next_progress += 0.1
-
-                q1_errors.selected_permutation = i
-
-                sum = score_diff(q1_errors)
-
-                if sum < score:
-                    score = sum
-                    best_comb = i
-                    
-            q1_errors.selected_permutation = best_comb
-            print(f"final score: {score}")
-
-        # ---- Q2 errors ---------------------------------------------------------------------------
-        if not SKIP_Q2:
-            print(f"searching for best combination in {len(q2_errors.permutations)} permutations")
-            print(f"using the diff method")
-
-            score = score_fun(q2_errors)
-            print(f" -- initial score: {score}")
-
-            next_progress = 0.1
-            
-            for i in range(len(q2_errors.permutations)):
-                if i / len(q2_errors.permutations) > next_progress:
-                    print(f"progress: {100* i / len(q2_errors.permutations):.0f} %")
-                    next_progress += 0.1
-
-                q2_errors.selected_permutation = i
-
-                sum = score_fun(q2_errors)
-
-                if sum < score:
-                    score = sum
-                    best_comb = i
-                    
-            print(f"final score: {score}")
-
-            q2_errors.selected_permutation = best_comb
-
-        # ---- so simulations, write results to df ------------------------------------------------
+        # ---- do simulations, write results to df ------------------------------------------------
         check2, err2, diff2 = do_sim(q1_errors, q2_errors)
 
         params = {}
@@ -149,19 +93,15 @@ def do_analysis():
         # ---- end of sort_and_sim ----------------------------------------------------------------
 
 
-    def score_diff(errors: Pairs):
-        return np.sum([
-            (errors.get_pair(i)[0].real_error - errors.get_pair(i)[1].real_error)**2
-            for i in range(errors.get_pair_count())])
-
-    def score_sum(errors):
-        return np.sum([
-            (errors.get_pair(i)[0].real_error + errors.get_pair(i)[1].real_error)**2
-            for i in range(errors.get_pair_count())])
 
     try:
-        sort_and_sim(score_diff, SUMM_DIFF)
-        sort_and_sim(score_sum, SUMM_SUM)
+        q1_errors.sort_diff()
+        q2_errors.sort_diff()
+        sort_and_sim(SUMM_DIFF)
+
+        q1_errors.sort_sum()
+        q2_errors.sort_sum()
+        sort_and_sim(SUMM_SUM)
     except:
         return
 
