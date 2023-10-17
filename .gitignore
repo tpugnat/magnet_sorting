@@ -10,4 +10,4 @@ pres*/*.aux
 pres*/*.toc
 pres*/*.log
 pres*/*.nav
-pres*/*.pdf
+pres*/presentation.pdf
