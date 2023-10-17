@@ -9,7 +9,7 @@ BLUE_INNER = "#5080F0"
 BLUE_OUTER = "#000080"
 
 print("=== Sum ================================")
-summ = tfs.read("backup/summ_sum.tfs")
+summ = tfs.read("summ_sum.tfs")
 
 print("CORR")
 print(summ["CORR_AFTER"]/summ["CORR"])
@@ -52,7 +52,7 @@ print(f"improv: {len(data_under)}")
 print(f"deteri: {len(data_over)}")
 
 print("=== Dif ================================")
-summ = tfs.read("backup/summ_diff.tfs")
+summ = tfs.read("summ_diff.tfs")
 
 data = summ["CORR_AFTER"]/summ["CORR"]
 
