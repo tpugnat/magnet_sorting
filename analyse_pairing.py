@@ -11,14 +11,9 @@ BLUE_OUTER = "#000080"
 print("=== Sum ================================")
 summ = tfs.read("summ_sum.tfs")
 
-print("CORR")
-print(summ["CORR_AFTER"]/summ["CORR"])
-print("BBEAT")
-print(summ["BBEAT_AFTER"]/summ["BBEAT"])
-
 data = summ["CORR_AFTER"]/summ["CORR"]
 
-data_over = [x for x in data if x > 1]
+data_over = [x for x in data if x >= 1]
 print("CORR > 0")
 print(len(data_over)/len(data))
 
@@ -44,12 +39,28 @@ plt.ylabel("Frequency")
 plt.legend()
 plt.savefig("corr.pdf")
 
-plt.hist(summ["BBEAT_AFTER"]/summ["BBEAT"], label="BBEAT", bins=BINS)
+plt.hist(summ["BBEAT_AFTER"]/summ["BBEAT"], label="BBEAT",
+         bins=BINS,
+         )
 plt.legend()
 plt.savefig("bbeat.pdf")
 
 print(f"improv: {len(data_under)}")
 print(f"deteri: {len(data_over)}")
+
+plt.close()
+
+fig = plt.gcf()
+
+plt.xlim(0,6)
+plt.ylim(0,4)
+fig.set_size_inches(6, 4)
+plt.scatter(summ["BBEAT_AFTER"]/summ["BBEAT"], summ["CORR_AFTER"]/summ["CORR"],
+            s=2)
+plt.xlabel("BBEAT improvement")
+plt.ylabel("CORR improvement")
+
+plt.savefig("correlation.pdf")
 
 print("=== Dif ================================")
 summ = tfs.read("summ_diff.tfs")
@@ -58,7 +69,7 @@ data = summ["CORR_AFTER"]/summ["CORR"]
 
 plt.close()
 
-data_over = [x for x in data if x > 1]
+data_over = [x for x in data if x >= 1]
 print("CORR > 0")
 print(len(data_over)/len(data))
 
