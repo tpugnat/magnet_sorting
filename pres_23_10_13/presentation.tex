@@ -101,6 +101,8 @@ Andreas Wegscheider\\[1em]
         \item setup simulation scripts to \highl{introduce errors} and \highl{control sorting}\\
         \item ran extensive simulations with \highl{naive} sorting methods
         \item recorded correctability using omc3's \texttt{global\_correct}
+        \item all code available at \\ 
+            {\small \faGithub~\href{https://github.com/awegsche/magnet_sorting}{\texttt{magnet\_sorting}}}
     \end{itemize}
     \end{minipage}
     \hfill
@@ -109,11 +111,10 @@ Andreas Wegscheider\\[1em]
         \small
         \begin{minted}
             [
-            xleftmargin=1em,
+            numbersep=5pt,
             fontsize=\footnotesize,
             linenos,
             bgcolor=blue!5!white,
-            auto
             ]
             {python}
 q2_errors = Q2Pairs(real_errors=10,
@@ -133,6 +134,37 @@ q2_errors.write_errors_to_file("errors_Q2.madx")
 \normalsize
     
 \end{frame}
+
+\begin{frame} % ------------------------------------------------------------------------------------
+    {Stages}
+
+    From \texttt{EDMS 2912331}:\\[0.5em]
+
+    \begin{tabular}{c|l|r}
+        \textbf{Stage} & \textbf{Description} & \textbf{Number of possibilities}\\
+        \hline
+        1 & 8 possibilities for Q1/Q3 & $8! = 40320$\\
+          & 8 possibilities for Q2a/b & $8! = 40320$\\
+          \hline 
+          & sum                       & $80640$\\
+          \hline 
+          \hline 
+        2 & 8 possibilities for Q1/Q3 & $8! = 40320$\\
+          & 4 possibilities for Q2a   & $4! = 24$\\
+          & 4 possibilities for Q2b   & $4! = 24$\\
+          \hline 
+          & sum                       & $40368$\\
+          \hline 
+          \hline 
+        3 & 2 possibilities for Q1   & $2! = 2$\\
+          & 2 possibilities for Q3   & $2! = 2$\\
+          & 2 possibilities for Q2   & $2! = 2$\\
+          \hline 
+          & sum                       & $6$\\
+          \hline 
+          \hline 
+    \end{tabular}
+\end{frame} % --------------------------------------------------------------------------------------
 
 \begin{frame} % ------------------------------------------------------------------------------------
     {Effect on correctability}
