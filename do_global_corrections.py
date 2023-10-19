@@ -4,12 +4,11 @@ from subprocess import Popen
 from omc3.scripts.fake_measurement_from_model import generate as fake_measurement
 from omc3 import global_correction
 from omc3.response_creator import create_response_entrypoint
-from sortq2withuncertainty import Pairs, Q2Pairs
-from sortq1withuncertainty import Q1Pairs
+from q1_errors import Q1Pairs
+from q2_errors import Q2Pairs
 from magnet_errors import *
 from pathlib import Path
 import tfs
-from matplotlib import pyplot as plt, sys
 import numpy as np
 import pandas as pd
 from typing import List, Union, Tuple

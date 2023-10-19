@@ -10,8 +10,8 @@ class Pairs:
         self.cold_masses = []
         self.selected_permutation = 0
         self.permutations = []
+        self.stage = 1
 
-    
     def positions(self):
         """ returns a list of permutated indices """
         raise NotImplementedError()

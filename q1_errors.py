@@ -18,10 +18,17 @@ AMP_MEAS_ERROR = 2  # Random error of measurement
 
 class Q1Pairs(Pairs):
     NAME = "Q1"
-    def __init__(self, real_error: float = AMP_REAL_ERROR, meas_error: float = AMP_MEAS_ERROR):
+    def __init__(self,
+                 real_error: float = AMP_REAL_ERROR,
+                 meas_error: float = AMP_MEAS_ERROR,
+                 stage: int = 1):
         self.cold_masses = [MagnetError(real_error , meas_error) for _ in range(self.get_magnet_count())]
+        self.stage = stage
         self.selected_permutation = 0
-        self.permutations = list(itertools.permutations(range(self.get_magnet_count()//2)))
+        if stage == 1:
+            self.permutations = list(itertools.permutations(range(self.get_magnet_count()//2)))
+        elif stage == 2:
+            raise NotImplementedError("stage 2 not implemented for Q2")
 
     def positions(self):
         return self.permutations[self.selected_permutation]
