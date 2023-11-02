@@ -55,15 +55,17 @@ def write_summary(parameters, filename):
 class Summary():
     def __init__(self) -> None:
         self.not_correctable = 0
+        self.low_bbeat = 0
         self.general_failed = 0
         self.passed = 0
 
     def __repr__(self) -> str:
-        total = self.not_correctable + self.general_failed + self.passed
+        total = self.not_correctable + self.general_failed + self.passed + self.low_bbeat
         return f"""
 Simulation Summary
 ==================
 not correctable : {self.not_correctable:5} ({self.not_correctable/total * 100.0:4.0f}%)
+low beta beat   : {self.low_bbeat:5} ({self.low_bbeat/total * 100.0:4.0f}%)
 general failed  : {self.general_failed:5} ({self.general_failed/total * 100.0:4.0f}%)
 passed          : {self.passed:5} ({self.passed/total * 100.0:4.0f}%)
 --------------------------------
@@ -104,6 +106,11 @@ def do_analysis(summ: Summary):
     except Exception as e:
         summ.general_failed = summ.general_failed + 1
         print(e)
+        return
+
+    if err1 < 0.05:
+        summ.low_bbeat = summ.low_bbeat + 1
+        print("Low initial beta beating, don't try to improve")
         return
 
     summ.passed = summ.passed + 1
