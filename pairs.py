@@ -4,7 +4,7 @@ import numpy as np
 
 # threshold on correction strengths, if the magnet error is below this value (relative for now)
 # we won't (be able) to do corrections on it
-CORRECTABILITY_THRESHOLD = 1.0e-2
+CORRECTABILITY_THRESHOLD = 1.0
 
 class Pairs:
     NAME = None
