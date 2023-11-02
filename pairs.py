@@ -2,6 +2,10 @@ from magnet_errors import *
 from typing import Tuple
 import numpy as np
 
+# threshold on correction strengths, if the magnet error is below this value (relative for now)
+# we won't (be able) to do corrections on it
+CORRECTABILITY_THRESHOLD = 1.0e-2
+
 class Pairs:
     NAME = None
 
@@ -35,6 +39,14 @@ class Pairs:
             Q1ab Q3ab
         """
         raise NotImplementedError()
+
+    def check_correctability(self):
+        """ checks if all values are above the `CORRECTABILITY_THRESHOLD`
+
+            returns `True` if at least one cold mass error is above threshold
+        """
+        errs = [e.real_error for e in self.cold_masses]
+        return np.any(np.abs(errs) > CORRECTABILITY_THRESHOLD)
 
     # ---- Output to files -------------------------------------------------------------------------
     def write_errors_to_file(self, filename):
@@ -113,4 +125,16 @@ class Pairs:
     def sort_sum(self):
         """ Convenience method for performing the sorting according to sum"""
         self.sort(self.score_sum)
+
+
+class CorrectabilityError(Exception):
+    def __init__(self, errs) -> None:
+        self.errs = errs
+
+    def __repr__(self) -> str:
+        return (f"the following errors are all below the threshold {CORRECTABILITY_THRESHOLD}:\n"
+                + ", ".join([str(x) for x in self.errs]))
+
+    def __str__(self) -> str:
+        return self.__repr__()
 

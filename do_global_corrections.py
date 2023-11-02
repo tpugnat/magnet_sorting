@@ -1,9 +1,11 @@
+from datetime import datetime
 import os
 from os import system
 from subprocess import Popen
 from omc3.scripts.fake_measurement_from_model import generate as fake_measurement
 from omc3 import global_correction
 from omc3.response_creator import create_response_entrypoint
+from pairs import CorrectabilityError
 from q1_errors import Q1Pairs
 from q2_errors import Q2Pairs
 from magnet_errors import *
@@ -50,24 +52,61 @@ def write_summary(parameters, filename):
               pd.concat([tfs_summary, pd.DataFrame(parameters, index=[index])])
               )
 
+class Summary():
+    def __init__(self) -> None:
+        self.not_correctable = 0
+        self.general_failed = 0
+        self.passed = 0
+
+    def __repr__(self) -> str:
+        total = self.not_correctable + self.general_failed + self.passed
+        return f"""
+Simulation Summary
+==================
+not correctable : {self.not_correctable:5} ({self.not_correctable/total * 100.0:4.0f}%)
+general failed  : {self.general_failed:5} ({self.general_failed/total * 100.0:4.0f}%)
+passed          : {self.passed:5} ({self.passed/total * 100.0:4.0f}%)
+--------------------------------
+total           : {total:5}
+"""
+    def __str__(self) -> str:
+        return self.__repr__()
+
+
 def main():
     """
     """
 
+    summ = Summary()
+
     for i in range(1000):
-        do_analysis()
+        do_analysis(summ)
+        print(summ)
+
+        with open(f"sim_summary{datetime.now()}.txt", "w") as summfile:
+            summfile.write(str(summ))
+            summfile.write("\n")
 
 
-def do_analysis():
+def do_analysis(summ: Summary):
 
     q2_errors = Q2Pairs(10,2)
     q1_errors = Q1Pairs(10,2)
 
     try:
         check1, err1, diff1 = do_sim(q1_errors, q2_errors)
-    except Exception as e:
+
+    except CorrectabilityError as e:
+        summ.not_correctable = summ.not_correctable + 1 
+        print("test case not correctable")
         print(e)
         return
+    except Exception as e:
+        summ.general_failed = summ.general_failed + 1
+        print(e)
+        return
+
+    summ.passed = summ.passed + 1
 
     def sort_and_sim(summ_filename):
         """ applies the sorting, then simulates the sorted lattice, measures beta beating before
@@ -115,6 +154,11 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
 
         q2_errors.write_errors_to_file("model/errors_Q2.madx")
         q1_errors.write_errors_to_file("model/errors_Q1.madx")
+
+        if not q1_errors.check_correctability():
+            raise CorrectabilityError([x.real_error for x in q1_errors.cold_masses])
+        if not q2_errors.check_correctability():
+            raise CorrectabilityError([x.real_error for x in q2_errors.cold_masses])
 
         template_file = open("job.inj.madx", "r")
         jobfile = open("model/run_job.inj.madx", "w")
