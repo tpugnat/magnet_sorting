@@ -25,10 +25,10 @@ class Q1Pairs(Pairs):
         self.cold_masses = [MagnetError(real_error , meas_error) for _ in range(self.get_magnet_count())]
         self.stage = stage
         self.selected_permutation = 0
-        if stage == 1:
+        if stage == 1 or stage == 2:
             self.permutations = list(itertools.permutations(range(self.get_magnet_count()//2)))
-        elif stage == 2:
-            raise NotImplementedError("stage 2 not implemented for Q2")
+        elif stage == 3:
+            raise NotImplementedError("slhfe")
 
     def positions(self):
         return self.permutations[self.selected_permutation]
