@@ -187,8 +187,13 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
 
     #plt.show()
 
+    # reconstructed beta beating
     rms_check = rms(check_twiss["BETX"]/model_twiss["BETX"]-1)
+
+    # error beta beating
     rms_err = rms(err_twiss["BETX"]/model_twiss["BETX"]-1)
+
+    # difference (how close do we get?)
     rms_diff = rms(check_twiss["BETX"]/err_twiss["BETX"]-1)
 
     print(f"rms check: {rms_check}, rms err: {rms_err}")
