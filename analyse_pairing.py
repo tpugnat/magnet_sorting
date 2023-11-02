@@ -50,6 +50,34 @@ print(f"deteri: {len(data_over)}")
 
 plt.close()
 
+# --------------------------------------------------------------------------------------------------
+
+XMAX = 0.03
+step = XMAX / BINS
+
+plt.hist(summ["CORR"],
+         label="before sorting",
+         color="#F05050",
+         edgecolor="#F05050",
+         histtype="step",
+         bins=np.arange(0, XMAX, step)
+         )
+
+plt.hist(summ["CORR_AFTER"],
+         label="after sorting",
+         color=BLUE_INNER,
+         edgecolor=BLUE_INNER,
+         histtype="step",
+         bins=np.arange(0, XMAX, step)
+         )
+plt.xlabel("relative $\\beta$ beating")
+plt.ylabel("Frequency")
+plt.legend()
+plt.savefig("recon.pdf")
+
+plt.close()
+
+# --------------------------------------------------------------------------------------------------
 fig = plt.gcf()
 
 plt.xlim(0,6)
