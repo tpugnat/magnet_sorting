@@ -87,9 +87,24 @@ class Pairs:
 
     def sort(self, sort_fn):
         """
-        Performs the sorting.
+        Performs the sorting, i.e. brute force calculates the score for each permutation and selects
+        the best one.
 
         sort_fn should take a Pairs object and return a score
+
+        Example:
+            ``` python
+
+            pairs = Pairs()
+
+            def sort_fn(pairs):
+                return np.sum([
+                    (errors.get_pair(i)[0].real_error - errors.get_pair(i)[1].real_error)**2
+                    for i in range(errors.get_pair_count())])
+
+            pairs.sort(sort_fn)
+            ```
+
         """
 
         print(f"sorting {self.NAME}") 
