@@ -15,10 +15,15 @@ import numpy as np
 import pandas as pd
 from typing import List, Union, Tuple
 
+# path to madx executable
 MADX = "/home/awegsche/programs/madx/madx-gnu64"
+
+# path to twiss output
 MODEL_TWISS = "model/twiss_err_b1.tfs"
-EFILE =  "./table_corrections_Q2.madx"
-SEED = 0
+
+# variable categories for global corrections
+# these are the magnet circuits used to correct, check that they match the triplets you want to correct
+# e.g. correcting IR1 with IR2 circuits will not yield good results
 VAR_CATS = [
         'kqx2a.l1', 'kqx2a.r1',
         'kqx2a.l5', 'kqx2a.r5',
@@ -31,18 +36,41 @@ VAR_CATS = [
         ]
 
 
+# turn off certain parts of the sim, leave all at `TRUE` for more than one simulation or you will
+# get the same result over and over
 DO_MADX = True
 DO_FR = True
 DO_CORR = True
 
+# error specification, this has to be kept up to date with estimations from Massimo and Ezio
 AMP_REAL_ERROR = 10
 AMP_MEAS_ERROR = 2
 
+# maximum number of simulations, `Ctrl-C` stops the program early
+MAX_SIMS = 1000
+
+# some more constants
 SUMM_PAIRING = "summ_pairing.tfs"
 SUMM_SUM = "summ_sum.tfs"
 SUMM_DIFF = "summ_diff.tfs"
 
 
+def main():
+    """
+    """
+
+    summ = Summary()
+
+    for i in range(MAX_SIMS):
+        do_analysis(summ)
+        print(summ)
+
+        with open(f"sim_summary{datetime.now()}.txt", "w") as summfile:
+            summfile.write(str(summ))
+            summfile.write("\n")
+
+
+# ---- summary (helpfull to check the global state of the simulations) -----------------------------
 def write_summary(parameters, filename):
     print("writing summary tfs")
     tfs_summary = tfs.read(filename) if os.path.exists(filename) else pd.DataFrame()
@@ -75,26 +103,20 @@ total           : {total:5}
         return self.__repr__()
 
 
-def main():
-    """
-    """
 
-    summ = Summary()
-
-    for i in range(1000):
-        do_analysis(summ)
-        print(summ)
-
-        with open(f"sim_summary{datetime.now()}.txt", "w") as summfile:
-            summfile.write(str(summ))
-            summfile.write("\n")
-
-
+# ---- ANALYSIS ------------------------------------------------------------------------------------
 def do_analysis(summ: Summary):
+    """ runs a full analysis, e.g. 
+    - runs madx and measures bbeat before and after corrs with initial distribution
+    - does the sorting, according to certain criteria
+    - runs madx and corrs again after sorting
+    """
 
     q2_errors = Q2Pairs(10,2)
     q1_errors = Q1Pairs(10,2)
 
+    # initial distribution, the try ... except block is to remove cases that would either not result
+    # in a stable machinge anyways or would not be corrected by us because the bbeat is already fine
     try:
         check1, err1, diff1 = do_sim(q1_errors, q2_errors)
 
@@ -153,6 +175,18 @@ def do_analysis(summ: Summary):
 
 
 def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]:
+    """
+    runs madx and simulates corrections
+    returns:
+        (err, check, diff)
+        - err = bbeat of the virgin lattice
+        - check = bbeat reconstruction with the result from global_corrections
+        - diff = difference between the two
+
+    Note:
+        One could (should) apply the corrections (= negative of the reconstructed errors) to the
+        virgin lattice, but this is not implemented yet.
+    """
     print("running simulation")
 
     if DO_MADX:
@@ -254,6 +288,7 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
 
 
 def rms(array):
+    """ root mean square """
     return np.sqrt(np.mean(array**2))
 
 main()
