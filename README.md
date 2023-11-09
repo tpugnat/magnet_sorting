@@ -26,13 +26,13 @@ chmod u+x bootstrap.sh
 - [FiDeL homepage](https://lhc-div-mms.web.cern.ch/tests/MAG/Fidel/)
 - [Magnet sorting Decision](https://edms.cern.ch/document/LHC-LM-ED-0001/1.0/approvalAndComments)
 - [MADX Lattice](#madx-lattice) info
+- [Magnet sorting studies for LHC](https://www.sciencedirect.com/science/article/pii/S0168900299001990?via%3Dihub)
 
 ## Current progress
 
 - defined steps to take with Massimo
 - [Error distribution](#error-distribution) defines how the errors are created
-- run many [Simulations](#simulations) with different magnet errors
-- get global corrections from [Full Response](#full-response)
+- Run many simulations, correct with full response and compare how correctability and bbeat improves
 
 ### Many simulations result
 
@@ -109,12 +109,10 @@ Sorting: Q1IP1 - Q1IP5
 The error distributions are created and managed by subclasses of [`Pairs`](pairs.py).
 
 Example:
-
 ``` python
 q1_errors = Q1Pairs(real_error=10, meas_error=2, stage=1)
 q1_errors.write_errors_to_file("model/errors_Q1.madx")
 ```
-
 This creates a set of error distributions `q1_errors` and writes the errors of the initial
 distribution to a file `model/errors_Q1.madx`.
 
@@ -136,23 +134,15 @@ q1_errors.sort(sort_fn)
 q1_errors.write_errors_to_file("model/errors_Q1_sorted.madx")
 ```
 
-
-
-
 # MADX lattice
-
 
 root: [acc-models-lhc](#acc-models-lhc)
 
-
-
 ## Triplet
-
 
 Q1ab, Q2a, Q2b, Q3ab
 
 defined in [acc-models-lhc/hllhc_sequence.madx:420](#acc-models-lhchllhcsequencemadx420)
-
 
 ###  Powering
 
