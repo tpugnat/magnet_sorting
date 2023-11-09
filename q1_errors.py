@@ -17,7 +17,10 @@ AMP_REAL_ERROR = 50  # Full range of integrated gradient error in units
 AMP_MEAS_ERROR = 2  # Random error of measurement
 
 class Q1Pairs(Pairs):
+    """ Actually Q1 and Q3, because those are "pairable" """
+
     NAME = "Q1"
+
     def __init__(self,
                  real_error: float = AMP_REAL_ERROR,
                  meas_error: float = AMP_MEAS_ERROR,
