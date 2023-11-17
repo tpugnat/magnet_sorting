@@ -7,9 +7,29 @@ categories: HL fellow magnet sorting
 
 * Intro
 
+** Setup
+
+   The script `bootstrap.sh` should get you up and running
+
+   ``` shell
+   chmod u+x bootstrap.sh
+   ./bootstrap.sh
+   ```
+
+** Structure
+
+   - `do_global_corrections.py` will run a full set of simulations
+     go into the file and check it out
+   - `pairs.py`, `q1_errors.py` `q2_errors.py` and `magnet_errors.py` define helpful classes for
+     the setup of magnet errors
+   - `analysis_pairing.py` does the statistics on many simulations
+   - `job*.madx` are various job files to create the madx lattice and produce model and meas output
+   - the folder `macros` contains our omc3 macros for lattice and model creation
+   - some folders are created by `bootstrap.sh`
+
+
 ** Quick links
 
-   - Current progress can be found hereafter
    - {*** History} gives an overview over studies already done
    - {https://lhc-div-mms.web.cern.ch/tests/MAG/Fidel/}[FiDeL homepage]
    - {https://edms.cern.ch/document/LHC-LM-ED-0001/1.0/approvalAndComments}[Magnet sorting Decision]
@@ -68,8 +88,10 @@ categories: HL fellow magnet sorting
 
 *** Immediate tasks:
 
-   - check corrections.py - can we get corrections from twiss?  YES   
-   - start some simulations, get overview of beta beating 6-10%
+    - check corrections.py - can we get corrections from twiss?
+      A: YES   
+    - start some simulations, get overview of beta beating
+      A: 6-10%
 
 *** result from meeting with massimo
 
@@ -91,72 +113,43 @@ categories: HL fellow magnet sorting
      - pairing: could improve correctability
   
  
-     Aperture / tolerances: try simulating sorting for aperture
+       Aperture / tolerances: try simulating sorting for aperture
 
 * Work Details
 
 ** Error distribution
 
-   The following files contain functions to create error distributions for the triplet magnets:
-   {/ sortq1withuncertainty.py}
-   {/ sortq2withuncertainty.py}
-   {/ sortq3withuncertainty.py}
+   The error distributions are created and managed by subclasses of {/ pairs.py:9}[`Pairs`].
 
-   can be used like this:
+   Example:
 
    @code python
-   import sortq1withuncertainty
-   import sortq2withuncertainty
-   import sortq3withuncertainty
+   q1_errors = Q1Pairs(real_error=10, meas_error=2, stage=1)
+   q1_errors.write_errors_to_file("model/errors_Q1.madx")
+   @end
 
-   sortq1withuncertainty.main(
-       amp_real_error = 10,
-       amp_meas_error = 2
-   )
+   This creates a set of error distributions `q1_errors` and writes the errors of the initial
+   distribution to a file `model/errors_Q1.madx`.
 
-   # similar for the others
-   sortq2withuncertainty.main()
-   sortq3withuncertainty.main()
+   Now we can perform sorting:
+   @code python
+   q1_errors.sort_sum()
+   q1_errors.write_errors_to_file("model/errors_Q1_sorted.madx")
+   @end
+
+   Or define our own sorting function:
+
+   @code python
+   def sort_fn(pairs):
+       return np.sum([
+           (errors.get_pair(i)[0].real_error - errors.get_pair(i)[1].real_error)**2
+           for i in range(errors.get_pair_count())])
+
+   q1_errors.sort(sort_fn)
+   q1_errors.write_errors_to_file("model/errors_Q1_sorted.madx")
    @end
 
 
-
-** Simulations
-
-  Script: {/ do_analysis.py}
-
-  @code shell
-  . venv/bin/activate.fish
-  python do_analysis.py
-  @end
-
-  will run a couple of simulations, implementing random errors in the magnets
-
-  @code
-    usage: do_analysis.py [-h] [--reset] [--num NUM]
-
-    optional arguments:
-      -h, --help         show this help message and exit
-      --reset            deletes summary files
-      --num NUM, -n NUM  number of simulation runs. Defaul=1
-  @end
-
-** Full Response
-
-  The script {/ do_global_corrections.py} will run a global correction, using only the triplet
-  powerings.
-
-  call it like this:
-
-  @code shell
-  . venv/bin/activate.fish
-  python do_global_corrections.py
-  @end
-
-*** ( ) Next steps: 
-   - check corrections of that (i.e. compare the twiss of the ideal model + changeparameters.madx
-     with the error twiss
-   - now do some large scale simulations to see how sorting / pairing impacts the quality
 
 * MADX lattice
 
