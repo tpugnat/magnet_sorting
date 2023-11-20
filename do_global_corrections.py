@@ -5,7 +5,7 @@ from subprocess import Popen
 from omc3.scripts.fake_measurement_from_model import generate as fake_measurement
 from omc3 import global_correction
 from omc3.response_creator import create_response_entrypoint
-from pairs import CorrectabilityError
+from pairs import CorrectabilityError, Pairs
 from q1_errors import Q1Pairs
 from q2_errors import Q2Pairs
 from magnet_errors import *
@@ -43,7 +43,7 @@ DO_FR = True
 DO_CORR = True
 
 # error specification, this has to be kept up to date with estimations from Massimo and Ezio
-AMP_REAL_ERROR = 10
+AMP_REAL_ERROR = 50
 AMP_MEAS_ERROR = 2
 
 # maximum number of simulations, `Ctrl-C` stops the program early
@@ -53,6 +53,7 @@ MAX_SIMS = 1000
 SUMM_PAIRING = "summ_pairing.tfs"
 SUMM_SUM = "summ_sum.tfs"
 SUMM_DIFF = "summ_diff.tfs"
+SUMM_BBEAT = "summ_bbeat.tfs"
 
 
 def main():
@@ -159,19 +160,69 @@ def do_analysis(summ: Summary):
 
         # ---- end of sort_and_sim ----------------------------------------------------------------
 
-
-
     try:
-        q1_errors.sort_diff()
-        q2_errors.sort_diff()
-        sort_and_sim(SUMM_DIFF)
+        # ---- sorting based on initial beta beating ---------------------------------------------
 
+        def sort_on_bbeat_q1(pairs: Q1Pairs):
+            return run_madx_for_sorting(pairs, q2_errors)
+
+        def sort_on_bbeat_q2(pairs: Q2Pairs):
+            return run_madx_for_sorting(q1_errors, pairs)
+
+        # q1_errors.sort(sort_on_bbeat_q1)
+        # q2_errors.sort(sort_on_bbeat_q2)
+        # sort_and_sim(SUMM_BBEAT)
+
+        # # ---- naive sorting methods (but fast, we can crunch through 80k combinations in < 1s ----
+        # # ---- this sorts on the difference of errors --------------------------------------------
+        # q1_errors.sort_diff()
+        # q2_errors.sort_diff()
+        # sort_and_sim(SUMM_DIFF)
+
+        # ---- this sorts on the sum of errors (because nearby magnets should self cancel, right? -
         q1_errors.sort_sum()
         q2_errors.sort_sum()
         sort_and_sim(SUMM_SUM)
+
     except:
         return
 
+
+def run_madx(q1_errors: Q1Pairs, q2_errors: Q2Pairs):
+    print("running madx")
+
+    q2_errors.write_errors_to_file("model/errors_Q2.madx")
+    q1_errors.write_errors_to_file("model/errors_Q1.madx")
+
+    if not q1_errors.check_correctability():
+        raise CorrectabilityError([x.real_error for x in q1_errors.cold_masses])
+    if not q2_errors.check_correctability():
+        raise CorrectabilityError([x.real_error for x in q2_errors.cold_masses])
+
+    template_file = open("job.inj.madx", "r")
+    jobfile = open("model/run_job.inj.madx", "w")
+    jobfile.write(template_file.read().replace("_TRACK_", "0")) # no tracking
+    template_file.close()
+    jobfile.close()
+
+    # remove twiss output, its existance after running madx indicates success
+    system(f"rm {MODEL_TWISS}")
+
+    with open(os.devnull, "w") as devnull:
+        Popen([MADX, "run_job.inj.madx"], stdout=devnull, cwd="model").wait()
+
+    if not os.path.exists(f"{MODEL_TWISS}"):
+        raise RuntimeError("twiss_err_b1.tfs does not exist")
+
+
+def run_madx_for_sorting(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> float:
+
+    run_madx(q1_errors, q2_errors)
+
+    # error beta beating
+    err_twiss = tfs.read(MODEL_TWISS)
+    model_twiss = tfs.read("model1/twiss.dat")
+    return rms(err_twiss["BETX"]/model_twiss["BETX"]-1)
 
 
 def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]:
@@ -190,32 +241,7 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
     print("running simulation")
 
     if DO_MADX:
-
-        print("running madx")
-
-        q2_errors.write_errors_to_file("model/errors_Q2.madx")
-        q1_errors.write_errors_to_file("model/errors_Q1.madx")
-
-        if not q1_errors.check_correctability():
-            raise CorrectabilityError([x.real_error for x in q1_errors.cold_masses])
-        if not q2_errors.check_correctability():
-            raise CorrectabilityError([x.real_error for x in q2_errors.cold_masses])
-
-        template_file = open("job.inj.madx", "r")
-        jobfile = open("model/run_job.inj.madx", "w")
-        jobfile.write(template_file.read().replace("_TRACK_", "0")) # no tracking
-        template_file.close()
-        jobfile.close()
-
-        # remove twiss output, its existance after running madx indicates success
-        system(f"rm {MODEL_TWISS}")
-
-        with open(os.devnull, "w") as devnull:
-            Popen([MADX, "run_job.inj.madx"], stdout=devnull, cwd="model").wait()
-
-        if not os.path.exists(f"{MODEL_TWISS}"):
-            raise RuntimeError("twiss_err_b1.tfs does not exist")
-            
+        run_madx(q1_errors, q2_errors)
 
     accel_params = dict(
         accel="lhc",
