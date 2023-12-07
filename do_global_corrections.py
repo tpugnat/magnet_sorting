@@ -16,7 +16,8 @@ import pandas as pd
 from typing import List, Union, Tuple
 
 # path to madx executable
-MADX = "/home/awegsche/programs/madx/madx-gnu64"
+#MADX = "/home/awegsche/programs/madx/madx-gnu64"
+MADX = "/home/thpugnat/Documents/CERN/madx"
 
 # path to twiss output
 MODEL_TWISS = "model/twiss_err_b1.tfs"
@@ -55,6 +56,8 @@ SUMM_SUM = "summ_sum.tfs"
 SUMM_DIFF = "summ_diff.tfs"
 SUMM_BBEAT = "summ_bbeat.tfs"
 
+# some flags
+FLAG_DEBUG=False
 
 def main():
     """
@@ -66,9 +69,10 @@ def main():
         do_analysis(summ)
         print(summ)
 
-        with open(f"sim_summary{datetime.now()}.txt", "w") as summfile:
-            summfile.write(str(summ))
-            summfile.write("\n")
+        if FLAG_DEBUG:
+            with open(f"sim_summary{datetime.now()}.txt", "w") as summfile:
+                summfile.write(str(summ))
+                summfile.write("\n")
 
 
 # ---- summary (helpfull to check the global state of the simulations) -----------------------------
