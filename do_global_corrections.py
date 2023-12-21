@@ -155,6 +155,9 @@ def do_analysis(summ: Summary):
         params["CORR_AFTER"] = diff2
         params["CHECK"] = check1
         params["CHECK_AFTER"] = check2
+        # add permutation
+        params["PERM_Q1"] = ",".join([str(i) for i in q1_errors.permutations[q1_errors.selected_permutation]])
+        params["PERM_Q2"] = ",".join([str(i) for i in q2_errors.permutations[q2_errors.selected_permutation]])
 
         write_summary(params, summ_filename)
 
