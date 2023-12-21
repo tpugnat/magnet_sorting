@@ -34,6 +34,9 @@ class Q2Pairs(Pairs):
     def get_pair(self, index: int) -> Tuple[MagnetError, MagnetError]:
         return (self.get_magnet(2*index)[1], self.get_magnet(2*index+1)[1])
 
+    def get_pair_names(self, index: int) -> Tuple[str, str]:
+        return (self.get_magnet(2*index)[0], self.get_magnet(2*index+1)[0])
+
     def get_magnet(self, index):
         """ returns a tuple (magnet_name, magnet_error) """
         return (MAGNETS[index], self[index])
