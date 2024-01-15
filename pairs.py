@@ -40,6 +40,14 @@ class Pairs:
         """
         raise NotImplementedError()
 
+    def get_pair_names(self, index: int) -> Tuple[str, str]:
+        """ returns the names of the magnets of a natural pair (magnet1, magnet2)
+        where 'natural' means, A/B parts of Q2, whereas the whole Q1 is paired with Q3:
+            Q2a and Q2b
+            Q1ab Q3ab
+        """
+        raise NotImplementedError()
+
     def check_correctability(self):
         """ checks if all values are above the `CORRECTABILITY_THRESHOLD`
 
@@ -106,7 +114,6 @@ class Pairs:
             ```
 
         """
-
         print(f"sorting {self.NAME}") 
         print(f"searching for best combination in {len(self.permutations)} permutations")
         print(f"using the diff method")

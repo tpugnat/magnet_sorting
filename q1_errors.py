@@ -50,6 +50,10 @@ class Q1Pairs(Pairs):
         assert index < self.get_pair_count()
         return (self.get_magnet(index)[1], self.get_magnet(index+self.get_pair_count())[1])
 
+    def get_pair_names(self, index: int) -> Tuple[str, str]:
+        assert index < self.get_pair_count()
+        return (self.get_magnet(index)[0], self.get_magnet(index+self.get_pair_count())[0])
+
     def __getitem__(self, index: int):
         # permuted bucket
         bucket = index//2
