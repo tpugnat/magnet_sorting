@@ -8,10 +8,15 @@ STEP = 0.1
 BLUE_INNER = "#5080F0"
 BLUE_OUTER = "#000080"
 
-print("=== Sum ================================")
-summ = tfs.read("summ_sum.tfs")
+TYPE_SORTING="Sum"
+TYPE_SORTING="SumBeta"
+TYPE_SORTING="SumBBeating"
 
-data = summ["CORR_AFTER"]/summ["CORR"]
+
+print(f"=== {TYPE_SORTING} ================================")
+summ = tfs.read(f"summ_{TYPE_SORTING.lower()}.tfs")
+
+data = summ["CORRX_AFTER"]/summ["CORRX"]
 
 data_over = [x for x in data if x >= 1]
 print("CORR > 0")
@@ -39,13 +44,13 @@ plt.ylabel("Frequency")
 plt.legend()
 fig = plt.gcf()
 fig.set_size_inches(8, 4)
-plt.savefig("corr.pdf")
+plt.savefig(f"corr_{TYPE_SORTING.lower()}.pdf")
 
-plt.hist(summ["BBEAT_AFTER"]/summ["BBEAT"], label="BBEAT",
+plt.hist(summ["BBEATX_AFTER"]/summ["BBEATX"], label="BBEATX",
          bins=BINS,
          )
 plt.legend()
-plt.savefig("bbeat.pdf")
+plt.savefig(f"bbeat_{TYPE_SORTING.lower()}.pdf")
 
 print(f"improv: {len(data_under)}")
 print(f"deteri: {len(data_over)}")
@@ -57,7 +62,7 @@ plt.close()
 XMAX = 0.03
 step = XMAX / BINS
 
-plt.hist(summ["CORR"],
+plt.hist(summ["CORRX"],
          label="before sorting",
          color="#F05050",
          edgecolor="#F05050",
@@ -66,7 +71,7 @@ plt.hist(summ["CORR"],
          bins=np.arange(0, XMAX, step)
          )
 
-plt.hist(summ["CORR_AFTER"],
+plt.hist(summ["CORRX_AFTER"],
          label="after sorting",
          color=BLUE_INNER,
          edgecolor=BLUE_INNER,
@@ -77,7 +82,7 @@ plt.hist(summ["CORR_AFTER"],
 plt.xlabel("relative $\\beta$ beating")
 plt.ylabel("Frequency")
 plt.legend()
-plt.savefig("recon.pdf")
+plt.savefig(f"recon_{TYPE_SORTING.lower()}.pdf")
 
 plt.close()
 
@@ -87,12 +92,12 @@ fig = plt.gcf()
 plt.xlim(0,6)
 plt.ylim(0,4)
 fig.set_size_inches(6, 4)
-plt.scatter(summ["BBEAT_AFTER"]/summ["BBEAT"], summ["CORR_AFTER"]/summ["CORR"],
+plt.scatter(summ["BBEATX_AFTER"]/summ["BBEATX"], summ["CORRX_AFTER"]/summ["CORRX"],
             s=2)
-plt.xlabel("BBEAT improvement")
-plt.ylabel("CORR improvement")
+plt.xlabel("BBEATX improvement")
+plt.ylabel("CORRX improvement")
 
-plt.savefig("correlation.pdf")
+plt.savefig(f"correlation_{TYPE_SORTING.lower()}.pdf")
 
 # print("=== Dif ================================")
 # 
