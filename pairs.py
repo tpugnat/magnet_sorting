@@ -6,6 +6,15 @@ import numpy as np
 # we won't (be able) to do corrections on it
 CORRECTABILITY_THRESHOLD = 1.0
 
+def mask_monitor(optic):
+    return (optic.KEYWORD == 'MONITOR') & (~optic.NAME.str.contains('BPT')) & (~optic.NAME.str.contains('_ITLK')) & (~optic.NAME.str.contains('_DOROS'))
+
+
+def rms(array):
+    """ root mean square """
+    return np.sqrt(np.mean(array**2))
+    
+
 class Pairs:
     NAME = None
 
@@ -38,6 +47,12 @@ class Pairs:
             Q2a and Q2b
             Q1ab Q3ab
         """
+        raise NotImplementedError()
+
+    def get_pair_betx(self, index: int) -> Tuple[float, float]:
+        raise NotImplementedError()
+
+    def get_pair_bety(self, index: int) -> Tuple[float, float]:
         raise NotImplementedError()
 
     def get_pair_names(self, index: int) -> Tuple[str, str]:
@@ -93,6 +108,97 @@ class Pairs:
             (errors.get_pair(i)[0].real_error + errors.get_pair(i)[1].real_error)**2
             for i in range(errors.get_pair_count())])
 
+
+    #@staticmethod
+    #def score_sum_with_beta_as_weight(errors):
+    #    """
+    #    Sorts according to sum of pair elements
+    #    (this favors errors that naturally cancel each other)
+    #    """
+
+    #    return np.sqrt(np.sum([
+    #        (errors.get_pair(i)[0].real_error * errors.get_pair_betx(i)[0]  + errors.get_pair(i)[1].real_error * errors.get_pair_betx(i)[1])**2 
+    #        for i in range(errors.get_pair_count())])**2 + np.sum([
+    #        (errors.get_pair(i)[0].real_error * errors.get_pair_bety(i)[0]  + errors.get_pair(i)[1].real_error * errors.get_pair_bety(i)[1])**2 
+    #        for i in range(errors.get_pair_count())])**2)
+
+
+    #@staticmethod
+    #def score_sum_betabeating(errors):
+    #    """
+    #    Sorts according to sum of pair elements
+    #    (this favors errors that naturally cancel each other)
+    #    """
+
+    #    score_bbx = np.sum([
+    #        ( errors.get_pair(i)[0].real_error*errors.get_pair_betx(i)[0]*errors.get_pair_sign(i)[0] 
+    #        + errors.get_pair(i)[1].real_error*errors.get_pair_betx(i)[1]*errors.get_pair_sign(i)[1])
+    #        for i in range(errors.get_pair_count())
+    #        ])
+
+    #    score_bby = np.sum([
+    #        ( errors.get_pair(i)[0].real_error*errors.get_pair_bety(i)[0]*errors.get_pair_sign(i)[0] 
+    #        + errors.get_pair(i)[1].real_error*errors.get_pair_bety(i)[1]*errors.get_pair_sign(i)[1])
+    #        for i in range(errors.get_pair_count())
+    #        ])
+
+    #    return np.sqrt( score_bbx**2 + score_bby**2 )
+
+
+    @staticmethod
+    def score_max_betabeating(errors,errors_bis=None):
+        """
+        Sorts according to sum of pair elements
+        (this favors errors that naturally cancel each other)
+        """
+        
+        bbeating = errors.get_generated_betabeating()
+        bbeating_bis = [0,0]
+        if errors_bis is not None:
+            bbeating_bis = errors_bis.get_generated_betabeating()
+        
+        score_bbx = np.max(bbeating[0]+bbeating_bis[0])
+        score_bby = np.max(bbeating[1]+bbeating_bis[1])
+
+        return np.sqrt( score_bbx**2 + score_bby**2 )
+
+
+    @staticmethod
+    def score_min_betabeating(errors,errors_bis=None):
+        """
+        Sorts according to sum of pair elements
+        (this favors errors that naturally cancel each other)
+        """
+        
+        bbeating = errors.get_generated_betabeating()
+        bbeating_bis = [0,0]
+        if errors_bis is not None:
+            bbeating_bis = errors_bis.get_generated_betabeating()
+        
+        score_bbx = np.min(bbeating[0]+bbeating_bis[0])
+        score_bby = np.min(bbeating[1]+bbeating_bis[1])
+
+        return np.sqrt( score_bbx**2 + score_bby**2 )
+
+
+    @staticmethod
+    def score_rms_betabeating(errors,errors_bis=None):
+        """
+        Sorts according to sum of pair elements
+        (this favors errors that naturally cancel each other)
+        """
+        
+        bbeating = errors.get_generated_betabeating()
+        bbeating_bis = [0,0]
+        if errors_bis is not None:
+            bbeating_bis = errors_bis.get_generated_betabeating()
+        
+        score_bbx = rms(bbeating[0]+bbeating_bis[0])
+        score_bby = rms(bbeating[1]+bbeating_bis[1])
+
+        return np.sqrt( score_bbx**2 + score_bby**2 )
+
+
     def sort(self, sort_fn):
         """
         Performs the sorting, i.e. brute force calculates the score for each permutation and selects
@@ -124,6 +230,7 @@ class Pairs:
         next_progress = 0.1
         best_comb = 0
         
+        list_score = np.empty(len(self.permutations))
         for i in range(len(self.permutations)):
             if i / len(self.permutations) > next_progress:
                 print(f"progress: {100* i / len(self.permutations):.0f} %")
@@ -132,6 +239,8 @@ class Pairs:
             self.selected_permutation = i
 
             sum = sort_fn(self)
+            
+            list_score[i] = sum
 
             if sum < score:
                 score = sum
@@ -139,14 +248,23 @@ class Pairs:
                 
         self.selected_permutation = best_comb
         print(f"final score: {score}")
+        return np.argsort(list_score)
 
     def sort_diff(self):
         """ Convenience method for performing the sorting according to difference"""
-        self.sort(self.score_diff)
+        return self.sort(self.score_diff)
 
     def sort_sum(self):
         """ Convenience method for performing the sorting according to sum"""
-        self.sort(self.score_sum)
+        return self.sort(self.score_sum)
+
+    #def sort_beta(self):
+    #    """ Convenience method for performing the sorting according to sum with respect to the betas"""
+    #    return self.sort(self.score_sum_with_beta_as_weight)
+
+    def sort_betabeating(self):
+        """ Convenience method for performing the sorting according to beta-beating expression"""
+        return self.sort(self.score_rms_betabeating)
 
 
 class CorrectabilityError(Exception):
