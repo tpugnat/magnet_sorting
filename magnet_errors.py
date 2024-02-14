@@ -20,7 +20,8 @@ def rand(amplitude: float, cut_3sigma= False):
     #return normal(0, amplitude)
 
 
-SYST_ERROR = rand(10.0) # std deviation of systematic errors
+#SYST_ERROR = rand(10.0) # std deviation of systematic errors
+SYST_ERROR = 10.0
 
 
 class MagnetPair:
@@ -122,7 +123,7 @@ def unit(x: float) -> float:
 class MagnetError:
     def __init__(self, ampl_real: float, ampl_meas: float) -> None:
         self.real_error: float = rand(ampl_real)
-        self.meas_error: float = rand(ampl_meas)
+        self.meas_error: float = rand(ampl_meas, cut_3sigma= True)
 
     def believed_error(self) -> float:
         return self.real_error + self.meas_error + SYST_ERROR
