@@ -1,13 +1,22 @@
 from random import random
+import numpy as np
 
 # ---- helper functions ----------------------------------------------------------------------------
+
+# Set the seed
+print(f"Numpy random generator seed: {np.random.seed()}\n")
 
 # what does this do?
 def sortOnSum(val):
     return sum(val)
 
-def rand(amplitude: float):
-    return (random() - 0.5) * 2 * amplitude
+def rand(amplitude: float, cut_3sigma= False):
+    #return (random() - 0.5) * 2 * amplitude
+    ran = amplitude * np.random.normal()
+    if cut_3sigma:
+        while abs(ran)> 3*amplitude:
+            ran = amplitude * np.random.normal()
+    return ran
     #return normal(0, amplitude)
 
 
