@@ -4,18 +4,24 @@ import numpy as np
 # ---- helper functions ----------------------------------------------------------------------------
 
 # Set the seed
-print(f"Numpy random generator seed: {np.random.seed()}\n")
+#print(f"Numpy random generator seed: {np.random.seed()}\n")
+TYPE_RAND = 'Gaussian'; # 'Gaussian'; # 'Gaussian';
 
 # what does this do?
 def sortOnSum(val):
     return sum(val)
 
 def rand(amplitude: float, cut_3sigma= False):
-    #return (random() - 0.5) * 2 * amplitude
-    ran = amplitude * np.random.normal()
-    if cut_3sigma:
-        while abs(ran)> 3*amplitude:
-            ran = amplitude * np.random.normal()
+    if TYPE_RAND == "Uniform":
+        #print(f"Uniform distribution pm{amplitude}")
+        ran = (random() - 0.5) * 2 * amplitude
+        #ran = (np.random.random() - 0.5) * 2 * amplitude
+    if TYPE_RAND == "Gaussian":
+        #print(f"Gaussian distribution sigma={amplitude/3}  (3sigma cut: {cut_3sigma})")
+        ran = (amplitude/3) * np.random.normal()
+        if cut_3sigma:
+            while abs(ran)> 3*(amplitude/3):
+                ran = (amplitude/3) * np.random.normal()
     return ran
     #return normal(0, amplitude)
 
@@ -106,7 +112,8 @@ class MagnetPair:
     def write_error_to_file(error_file, name, value):
         error_file.write('select, flag=error, clear;\n')
         error_file.write(f'select, flag=error, PATTERN={name};\n' )
-        error_file.write('Efcomp, radius = 1, order= 1, dknr={0, ' + str(unit(value)) + '};\n')
+        #error_file.write('Efcomp, radius = 1, order= 1, dknr={0, ' + str(unit(value)) + '};\n')
+        error_file.write('Efcomp, radius = 0.050, order= 1, dknr={0, ' + str(unit(value)) + '};\n')
         error_file.write('\n')
 
 
@@ -122,7 +129,7 @@ def unit(x: float) -> float:
 
 class MagnetError:
     def __init__(self, ampl_real: float, ampl_meas: float) -> None:
-        self.real_error: float = rand(ampl_real)
+        self.real_error: float = rand(ampl_real, cut_3sigma= True)
         self.meas_error: float = rand(ampl_meas, cut_3sigma= True)
 
     def believed_error(self) -> float:

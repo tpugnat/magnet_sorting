@@ -22,6 +22,11 @@ class Pairs:
     def __init__(self):
         self.cold_masses = []
         self.selected_permutation = 0
+        self.initial_permutation    = {'id':0, 'rmsBETX':0, 'rmsBETY':0, 'rmsBETXY':0, 'maxBETX':0, 'maxBETY':0, 'maxBETXY':0}
+        self.best_permutation_alone = {'id':0, 'rmsBETX':0, 'rmsBETY':0, 'rmsBETXY':0, 'maxBETX':0, 'maxBETY':0, 'maxBETXY':0}
+        self.best_permutation_both  = {'id':0, 'rmsBETX':0, 'rmsBETY':0, 'rmsBETXY':0, 'maxBETX':0, 'maxBETY':0, 'maxBETXY':0}
+        self.worst_permutation_both = {'id':0, 'rmsBETX':0, 'rmsBETY':0, 'rmsBETXY':0, 'maxBETX':0, 'maxBETY':0, 'maxBETXY':0}
+        self.beta_wall_MADX         = {'id':0, 'rmsBETX':0, 'rmsBETY':0, 'meanBETX':0, 'meanBETY':0, 'rmsBETXY':0, 'maxBETX':0, 'maxBETY':0, 'maxBETXY':0}
         self.permutations = []
         self.stage = 1
 
@@ -146,16 +151,72 @@ class Pairs:
 
 
     @staticmethod
-    def score_max_betabeating(errors,errors_bis=None):
+    def score_maxabs_betabeatingX(errors,errors_bis=None,with_correction=True):
         """
         Sorts according to sum of pair elements
         (this favors errors that naturally cancel each other)
         """
         
-        bbeating = errors.get_generated_betabeating()
+        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
         bbeating_bis = [0,0]
         if errors_bis is not None:
-            bbeating_bis = errors_bis.get_generated_betabeating()
+            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
+        
+        score_bbx = np.max(abs(bbeating[0]+bbeating_bis[0]))
+        #score_bby = np.max(abs(bbeating[1]+bbeating_bis[1]))
+
+        return score_bbx
+
+
+    @staticmethod
+    def score_rms_betabeatingX(errors,errors_bis=None,with_correction=True):
+        """
+        Sorts according to sum of pair elements
+        (this favors errors that naturally cancel each other)
+        """
+        
+        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
+        bbeating_bis = [0,0]
+        if errors_bis is not None:
+            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
+        
+        score_bbx = rms(bbeating[0]+bbeating_bis[0])
+        #score_bby = rms(bbeating[1]+bbeating_bis[1])
+
+        return score_bbx
+        
+        
+
+
+    @staticmethod
+    def score_maxabs_betabeatingXY(errors,errors_bis=None,with_correction=True):
+        """
+        Sorts according to sum of pair elements
+        (this favors errors that naturally cancel each other)
+        """
+        
+        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
+        bbeating_bis = [0,0]
+        if errors_bis is not None:
+            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
+        
+        score_bbx = np.max(abs(bbeating[0]+bbeating_bis[0]))
+        score_bby = np.max(abs(bbeating[1]+bbeating_bis[1]))
+
+        return np.sqrt( score_bbx**2 + score_bby**2 )
+
+
+    @staticmethod
+    def score_max_betabeatingXY(errors,errors_bis=None,with_correction=True):
+        """
+        Sorts according to sum of pair elements
+        (this favors errors that naturally cancel each other)
+        """
+        
+        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
+        bbeating_bis = [0,0]
+        if errors_bis is not None:
+            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
         
         score_bbx = np.max(bbeating[0]+bbeating_bis[0])
         score_bby = np.max(bbeating[1]+bbeating_bis[1])
@@ -164,16 +225,16 @@ class Pairs:
 
 
     @staticmethod
-    def score_min_betabeating(errors,errors_bis=None):
+    def score_min_betabeatingXY(errors,errors_bis=None,with_correction=True):
         """
         Sorts according to sum of pair elements
         (this favors errors that naturally cancel each other)
         """
         
-        bbeating = errors.get_generated_betabeating()
+        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
         bbeating_bis = [0,0]
         if errors_bis is not None:
-            bbeating_bis = errors_bis.get_generated_betabeating()
+            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
         
         score_bbx = np.min(bbeating[0]+bbeating_bis[0])
         score_bby = np.min(bbeating[1]+bbeating_bis[1])
@@ -182,16 +243,16 @@ class Pairs:
 
 
     @staticmethod
-    def score_rms_betabeating(errors,errors_bis=None):
+    def score_rms_betabeatingXY(errors,errors_bis=None,with_correction=True):
         """
         Sorts according to sum of pair elements
         (this favors errors that naturally cancel each other)
         """
         
-        bbeating = errors.get_generated_betabeating()
+        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
         bbeating_bis = [0,0]
         if errors_bis is not None:
-            bbeating_bis = errors_bis.get_generated_betabeating()
+            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
         
         score_bbx = rms(bbeating[0]+bbeating_bis[0])
         score_bby = rms(bbeating[1]+bbeating_bis[1])
@@ -199,7 +260,7 @@ class Pairs:
         return np.sqrt( score_bbx**2 + score_bby**2 )
 
 
-    def sort(self, sort_fn):
+    def sort(self, sort_fn,with_correction=True):
         """
         Performs the sorting, i.e. brute force calculates the score for each permutation and selects
         the best one.
@@ -224,7 +285,7 @@ class Pairs:
         print(f"searching for best combination in {len(self.permutations)} permutations")
         print(f"using the diff method")
 
-        score = sort_fn(self)
+        score = sort_fn(self,with_correction=with_correction)
         print(f" -- initial score: {score}")
 
         next_progress = 0.1
@@ -238,7 +299,7 @@ class Pairs:
 
             self.selected_permutation = i
 
-            sum = sort_fn(self)
+            sum = sort_fn(self,with_correction=with_correction)
             
             list_score[i] = sum
 
@@ -247,6 +308,7 @@ class Pairs:
                 best_comb = i
                 
         self.selected_permutation = best_comb
+        
         print(f"final score: {score}")
         return np.argsort(list_score)
 
@@ -262,9 +324,25 @@ class Pairs:
     #    """ Convenience method for performing the sorting according to sum with respect to the betas"""
     #    return self.sort(self.score_sum_with_beta_as_weight)
 
-    def sort_betabeating(self):
+    def sort_def_fn(self,with_correction=True):
         """ Convenience method for performing the sorting according to beta-beating expression"""
-        return self.sort(self.score_rms_betabeating)
+        return self.sort(self.score_def_fn,with_correction=with_correction)
+
+    def sort_rmsbetabeatingXY(self,with_correction=True):
+        """ Convenience method for performing the sorting according to beta-beating expression"""
+        return self.sort(self.score_rms_betabeatingXY,with_correction=with_correction)
+
+    def sort_maxbetabeatingXY(self,with_correction=True):
+        """ Convenience method for performing the sorting according to beta-beating expression"""
+        return self.sort(self.score_maxabs_betabeatingXY,with_correction=with_correction)
+
+    def sort_rmsbetabeatingX(self,with_correction=True):
+        """ Convenience method for performing the sorting according to beta-beating expression"""
+        return self.sort(self.score_rms_betabeatingX,with_correction=with_correction)
+
+    def sort_maxbetabeatingX(self,with_correction=True):
+        """ Convenience method for performing the sorting according to beta-beating expression"""
+        return self.sort(self.score_maxabs_betabeatingX,with_correction=with_correction)
 
 
 class CorrectabilityError(Exception):
