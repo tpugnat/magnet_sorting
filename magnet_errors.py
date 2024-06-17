@@ -5,7 +5,7 @@ import numpy as np
 
 # Set the seed
 #print(f"Numpy random generator seed: {np.random.seed()}\n")
-TYPE_RAND = 'Gaussian'; # 'Gaussian'; # 'Gaussian';
+TYPE_RAND = 'Gaussian';
 
 # what does this do?
 def sortOnSum(val):
@@ -24,6 +24,20 @@ def rand(amplitude: float, cut_3sigma= False):
                 ran = (amplitude/3) * np.random.normal()
     return ran
     #return normal(0, amplitude)
+    
+
+def uniform(amplitude: float):
+    ran = (random() - 0.5) * 2 * amplitude
+    return ran
+
+
+def gauss3sc(amplitude: float, cut_3sigma= False):
+    ran = (amplitude/3) * np.random.normal()
+    if cut_3sigma:
+        while abs(ran)> 3*(amplitude/3):
+            ran = (amplitude/3) * np.random.normal()
+    return ran
+    
 
 
 #SYST_ERROR = rand(10.0) # std deviation of systematic errors
@@ -128,9 +142,15 @@ def unit(x: float) -> float:
     return x * 1.0e-4
 
 class MagnetError:
-    def __init__(self, ampl_real: float, ampl_meas: float) -> None:
-        self.real_error: float = rand(ampl_real, cut_3sigma= True)
+    def __init__(self, ampl_meas=0, ampl_cali=0, ampl_prec=0) -> None:
+        #self.real_error: float = rand(ampl_real, cut_3sigma= True)
         self.meas_error: float = rand(ampl_meas, cut_3sigma= True)
+        self.cali_error: float = ampl_cali
+        self.pres_error: float = gauss3sc(ampl_prec, cut_3sigma= True)
 
-    def believed_error(self) -> float:
-        return self.real_error + self.meas_error + SYST_ERROR
+    #def believed_error(self) -> float:
+    #    return self.real_error + self.meas_error + SYST_ERROR
+
+    @property
+    def real_error(self) -> float:
+        return self.meas_error - self.cali_error - self.pres_error

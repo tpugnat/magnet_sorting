@@ -45,8 +45,9 @@ VAR_CATS = [
 
 
 # TYPE_SCORE can be either "RMS_XY", "RMS_X", "MAXABS_XY", "MAXABS_X"
-TYPE_SCORE = 'RMS_XY'; # 'RMS_XY'; # 'RMS_XY'; 
-TYPE_RAND = 'Gaussian'; # 'Gaussian'; # 'Gaussian'; 
+TYPE_SCORE = 'RMS_XY'; 
+TYPE_ERROR = 'REAL'; 
+TYPE_RAND = 'Gaussian'; 
 FLAG_WITH_CORRECTION = False
 
 
@@ -58,8 +59,10 @@ DO_CORR = True
 
 # error specification, this has to be kept up to date with estimations from Massimo and Ezio 
 # (initially AMP_REAL_ERROR = 50 , AMP_MEAS_ERROR = 2)
-AMP_REAL_ERROR = 15; 
-AMP_MEAS_ERROR = 0
+AMP_MEAS_ERROR = 10;
+AMP_CALI_ERROR = 0;
+AMP_PRES_ERROR = 0;
+STAGE = 2;
 
 
 # maximum number of simulations, `Ctrl-C` stops the program early
@@ -68,19 +71,20 @@ MAX_SIMS = 1000 #100 #1 #1000
 NUMB_PERMUT_CROSSSCORING = 100
 
 # some more constants
-SUMM_PAIRING = "summ_pairing.tfs"
-SUMM_SUM = "summ_sum.tfs"
-SUMM_SUMBETA = "summ_sumbeta.tfs"
-SUMM_SUMBBEATING = "summ_sumbbeating.tfs"
+WRITE_SUMMARY_REFRESH_FREQUENCY = 100
+#SUMM_PAIRING = "summ_pairing.tfs"
+#SUMM_SUM = "summ_sum.tfs"
+#SUMM_SUMBETA = "summ_sumbeta.tfs"
+#SUMM_SUMBBEATING = "summ_sumbbeating.tfs"
 #SUMM_SUMBBEATING_V2 = "summ_sumbbeating_v2.tfs"
 
 if FLAG_WITH_CORRECTION:
-    SUMM_SUMBBEATING_V2 = f"summ_score_{TYPE_SCORE}_dist_25u_{TYPE_RAND}_nbsimu{MAX_SIMS}_wcor.tfs"
+    SUMM_SUMBBEATING_V2 = f"summ_score_{TYPE_SCORE}_dist_m{AMP_MEAS_ERROR}u_{TYPE_RAND}_c{AMP_CALI_ERROR}u_p{AMP_PRES_ERROR}u_nbsimu{MAX_SIMS}_wcor_{TYPE_ERROR}_Phase{STAGE}.tfs"
 else:
-    SUMM_SUMBBEATING_V2 = f"summ_score_{TYPE_SCORE}_dist_25u_{TYPE_RAND}_nbsimu{MAX_SIMS}.tfs"
+    SUMM_SUMBBEATING_V2 = f"summ_score_{TYPE_SCORE}_dist_m{AMP_MEAS_ERROR}u_{TYPE_RAND}_c{AMP_CALI_ERROR}u_p{AMP_PRES_ERROR}u_nbsimu{MAX_SIMS}_{TYPE_ERROR}_Phase{STAGE}.tfs"
 
-SUMM_DIFF = "summ_diff.tfs"
-SUMM_BBEAT = "summ_bbeat.tfs"
+#SUMM_DIFF = "summ_diff.tfs"
+#SUMM_BBEAT = "summ_bbeat.tfs"
 
 # some flags
 FLAG_DEBUG=False
@@ -92,6 +96,7 @@ def main():
     summ = Summary()
 
     for i in range(MAX_SIMS):
+        summ.final_seed = (MAX_SIMS==i+1)
         do_analysis(summ)
         print(summ)
 
@@ -100,21 +105,41 @@ def main():
                 summfile.write(str(summ))
                 summfile.write("\n")
                 
-    with open(f"sim_summary_{TYPE_SCORE}_dist_{AMP_REAL_ERROR}u_{TYPE_RAND}.txt", "w") as summfile:
+    with open(f"sim_summary_{TYPE_SCORE}_dist_{TYPE_SCORE}_dist_m{AMP_MEAS_ERROR}u_{TYPE_RAND}_c{AMP_CALI_ERROR}u_p{AMP_PRES_ERROR}u_nbsimu{MAX_SIMS}_{TYPE_ERROR}_Phase{STAGE}.txt", "w") as summfile:
                 summfile.write(str(summ))
                 summfile.write("\n")
 
 
 
+#WRITE_SUMMARY_COUNT = 0
 # ---- summary (helpfull to check the global state of the simulations) -----------------------------
-def write_summary(parameters, filename):
-    print("writing summary tfs")
-    tfs_summary = tfs.read(filename) if os.path.exists(filename) else pd.DataFrame()
-    index = len(tfs_summary.index)
+def write_summary(parameters, filename, summ):
+    print("concatenate summary table")
+    index = len(summ.WRITE_SUMMARY_TABLE.index)
+    summ.WRITE_SUMMARY_TABLE = pd.concat([summ.WRITE_SUMMARY_TABLE, pd.DataFrame(parameters, index=[index])], ignore_index=True)
+    
+    if summ.final_seed or len(summ.WRITE_SUMMARY_TABLE) >= WRITE_SUMMARY_REFRESH_FREQUENCY:
+        print("writing summary tfs")
+        tfs_summary = tfs.read(filename) if os.path.exists(filename) else pd.DataFrame()
+        
+        if "SEED" in tfs_summary.columns.tolist() and "SEED" in summ.WRITE_SUMMARY_TABLE.columns.tolist():
+            if max(tfs_summary.SEED) >= min(summ.WRITE_SUMMARY_TABLE.SEED):
+                summ.WRITE_SUMMARY_TABLE.SEED += max(tfs_summary.SEED) - min(summ.WRITE_SUMMARY_TABLE.SEED) + 1
 
-    tfs.write(filename,
-              pd.concat([tfs_summary, pd.DataFrame(parameters, index=[index])])
-              )
+        tfs.write(filename,
+                  pd.concat([tfs_summary, summ.WRITE_SUMMARY_TABLE], ignore_index=True)
+                  )
+        summ.WRITE_SUMMARY_TABLE = pd.DataFrame()
+        
+        
+    
+    #print("writing summary tfs")
+    #tfs_summary = tfs.read(filename) if os.path.exists(filename) else pd.DataFrame()
+    #index = len(tfs_summary.index)
+
+    #tfs.write(filename,
+    #          pd.concat([tfs_summary, pd.DataFrame(parameters, index=[index])])
+    #          )
 
 
 
@@ -133,13 +158,13 @@ def write_permutation_table(q1_errors, q2_errors, summ):
         print("writing permutation tfs")
         tfs_permutation = pd.DataFrame(0.0,index=range(len(q1_errors.permutations)+len(q2_errors.permutations)),columns=keys)
 
-        q2_BBETX, q2_BBETY = q2_errors.get_generated_betabeating(with_correction=False)
-        q2_BBETX_wcor, q2_BBETY_wcor = q2_errors.get_generated_betabeating(with_correction=True)
+        q2_BBETX, q2_BBETY = q2_errors.get_generated_betabeating_real(with_correction=False)
+        q2_BBETX_wcor, q2_BBETY_wcor = q2_errors.get_generated_betabeating_real(with_correction=True)
         for i in range(len(q1_errors.permutations)):
             q1_errors.selected_permutation = i
 
-            q1_BBETX, q1_BBETY = q1_errors.get_generated_betabeating(with_correction=False)
-            q1_BBETX_wcor, q1_BBETY_wcor = q1_errors.get_generated_betabeating(with_correction=True)
+            q1_BBETX, q1_BBETY = q1_errors.get_generated_betabeating_real(with_correction=False)
+            q1_BBETX_wcor, q1_BBETY_wcor = q1_errors.get_generated_betabeating_real(with_correction=True)
 
             params = {}
             q1_errors.log_strengths(params)
@@ -168,13 +193,13 @@ def write_permutation_table(q1_errors, q2_errors, summ):
         q1_errors.selected_permutation = q1_best_comb
         q2_errors.selected_permutation = q2_best_comb
 
-        q1_BBETX, q1_BBETY = q1_errors.get_generated_betabeating(with_correction=False)
-        q1_BBETX_wcor, q1_BBETY_wcor = q1_errors.get_generated_betabeating(with_correction=True)
+        q1_BBETX, q1_BBETY = q1_errors.get_generated_betabeating_real(with_correction=False)
+        q1_BBETX_wcor, q1_BBETY_wcor = q1_errors.get_generated_betabeating_real(with_correction=True)
         for i in range(len(q2_errors.permutations)):
             q2_errors.selected_permutation = i
 
-            q2_BBETX, q2_BBETY = q2_errors.get_generated_betabeating(with_correction=False)
-            q2_BBETX_wcor, q2_BBETY_wcor = q2_errors.get_generated_betabeating(with_correction=True)
+            q2_BBETX, q2_BBETY = q2_errors.get_generated_betabeating_real(with_correction=False)
+            q2_BBETX_wcor, q2_BBETY_wcor = q2_errors.get_generated_betabeating_real(with_correction=True)
 
             params = {}
             q1_errors.log_strengths(params)
@@ -215,9 +240,9 @@ def write_permutation_table(q1_errors, q2_errors, summ):
         tfs_permutation['SEED'] = summ.total()
         
         if FLAG_WITH_CORRECTION:
-            tfs.write(f"permutation_s{summ.total():d}_wcor.tfs", tfs_permutation)
+            tfs.write(f"permutation_s{summ.total():d}_{TYPE_SCORE}_dist_m{AMP_MEAS_ERROR}u_{TYPE_RAND}_c{AMP_CALI_ERROR}u_p{AMP_PRES_ERROR}u_nbsimu{MAX_SIMS}_wcor_{TYPE_ERROR}_Phase{STAGE}.tfs", tfs_permutation)
         else:
-            tfs.write(f"permutation_s{summ.total():d}.tfs", tfs_permutation)
+            tfs.write(f"permutation_s{summ.total():d}_{TYPE_SCORE}_dist_m{AMP_MEAS_ERROR}u_{TYPE_RAND}_c{AMP_CALI_ERROR}u_p{AMP_PRES_ERROR}u_nbsimu{MAX_SIMS}_{TYPE_ERROR}_Phase{STAGE}.tfs", tfs_permutation)
 
 
 
@@ -232,8 +257,8 @@ def write_betabeating_table(q1_errors, q2_errors,optic):
         mask_err_monitor   = mask_monitor(  err_twiss)
         mask_model_monitor = mask_monitor(model_twiss)
 
-        q1_BBETX, q1_BBETY = q1_errors.get_generated_betabeating(with_correction=False)
-        q2_BBETX, q2_BBETY = q2_errors.get_generated_betabeating(with_correction=False)
+        q1_BBETX, q1_BBETY = q1_errors.get_generated_betabeating_real(with_correction=False)
+        q2_BBETX, q2_BBETY = q2_errors.get_generated_betabeating_real(with_correction=False)
     
         params = {}
         params["NAME_MADX"] = err_twiss.NAME[mask_err_monitor]
@@ -274,6 +299,10 @@ class Summary():
         self.low_bbeat = 0
         self.general_failed = 0
         self.passed = 0
+        self.previous_study = 0
+        self.WRITE_SUMMARY_TABLE = pd.DataFrame()
+        self.final_seed = False
+        
 
     def __repr__(self) -> str:
         total = self.total()
@@ -284,6 +313,7 @@ not correctable : {self.not_correctable:5} ({self.not_correctable/total * 100.0:
 low beta beat   : {self.low_bbeat:5} ({self.low_bbeat/total * 100.0:4.0f}%)
 general failed  : {self.general_failed:5} ({self.general_failed/total * 100.0:4.0f}%)
 passed          : {self.passed:5} ({self.passed/total * 100.0:4.0f}%)
+previous study  : {self.previous_study:5} ({self.previous_study/total * 100.0:4.0f}%)
 --------------------------------
 total           : {total:5}
 """
@@ -291,7 +321,7 @@ total           : {total:5}
         return self.__repr__()
         
     def total(self) -> int:
-    	return self.not_correctable + self.general_failed + self.passed + self.low_bbeat
+        return self.not_correctable + self.general_failed + self.passed + self.low_bbeat + self.previous_study
 
 
 
@@ -317,12 +347,44 @@ def do_analysis(summ: Summary):
 
     #q2_errors = Q2Pairs(10,2, optic = optic_without_error)
     #q1_errors = Q1Pairs(10,2, optic = optic_without_error)
-    q2_errors = Q2Pairs(AMP_REAL_ERROR , AMP_MEAS_ERROR, optic = optic_without_error)
-    q1_errors = Q1Pairs(AMP_REAL_ERROR , AMP_MEAS_ERROR, optic = optic_without_error)
+    
+    cerror = uniform(AMP_CALI_ERROR)
+    cerror = AMP_CALI_ERROR*cerror/abs(cerror) if (cerror != 0) else AMP_CALI_ERROR
+    q2_errors = Q2Pairs(meas_error = AMP_MEAS_ERROR, cali_error = cerror, pres_error = 3*AMP_PRES_ERROR, 
+                        stage=STAGE, optic = optic_without_error)
+    
+    cerror = uniform(AMP_CALI_ERROR)
+    cerror = AMP_CALI_ERROR*cerror/abs(cerror) if (cerror != 0) else AMP_CALI_ERROR
+    q1_errors = Q1Pairs(meas_error = AMP_MEAS_ERROR, cali_error = cerror, pres_error = 3*AMP_PRES_ERROR, 
+                        stage=STAGE, optic = optic_without_error)
+    
+    cbbetx = pd.concat([q1_errors.monitor_responce_bbetx,q2_errors.monitor_responce_bbetx], axis=1)
+    cbbety = pd.concat([q1_errors.monitor_responce_bbety,q2_errors.monitor_responce_bbety], axis=1)
+
+    q1_errors.monitor_responce_bbetx_rms2 = q2_errors.monitor_responce_bbetx_rms2 = cbbetx.T.dot(cbbetx)/len(cbbetx)
+    q1_errors.monitor_responce_bbety_rms2 = q2_errors.monitor_responce_bbety_rms2 = cbbety.T.dot(cbbety)/len(cbbety)
     
     if TYPE_SCORE == "RMS_XY":
-        q1_errors.score_def_fn = q1_errors.score_rms_betabeatingXY
-        q2_errors.score_def_fn = q2_errors.score_rms_betabeatingXY
+        #q1_errors.score_def_fn = q1_errors.score_rms_betabeatingXY
+        #q2_errors.score_def_fn = q2_errors.score_rms_betabeatingXY
+        if FLAG_WITH_CORRECTION:
+            if TYPE_ERROR == "REAL":
+                q1_errors.score_def_fn = q1_errors.score_rms2_betabeatingXY_wicorrb2_real
+                q2_errors.score_def_fn = q2_errors.score_rms2_betabeatingXY_wicorrb2_real
+            elif TYPE_ERROR == "MEAS":
+                q1_errors.score_def_fn = q1_errors.score_rms2_betabeatingXY_wicorrb2_meas
+                q2_errors.score_def_fn = q2_errors.score_rms2_betabeatingXY_wicorrb2_meas
+            else:
+                raise TypeError(f"TYPE_ERROR for the choise of sorting must be either REAL or MEAS")
+        else:
+            if TYPE_ERROR == "REAL":
+                q1_errors.score_def_fn = q1_errors.score_rms2_betabeatingXY_nocorrb2_real
+                q2_errors.score_def_fn = q2_errors.score_rms2_betabeatingXY_nocorrb2_real
+            elif TYPE_ERROR == "MEAS":
+                q1_errors.score_def_fn = q1_errors.score_rms2_betabeatingXY_nocorrb2_meas
+                q2_errors.score_def_fn = q2_errors.score_rms2_betabeatingXY_nocorrb2_meas
+            else:
+                raise TypeError(f"TYPE_ERROR for the choise of sorting must be either REAL or MEAS")
     elif TYPE_SCORE == "RMS_X":
         q1_errors.score_def_fn = q1_errors.score_rms_betabeatingX
         q2_errors.score_def_fn = q2_errors.score_rms_betabeatingX
@@ -407,7 +469,7 @@ def do_analysis(summ: Summary):
         params = {**params,'wrst_id_q1':q1_errors.worst_permutation_both['id'] , 'wrst_id_q2':q2_errors.worst_permutation_both['id'] , \
                   **{'wrst_'+kk:vv for kk,vv in q1_errors.worst_permutation_both.items() if kk != 'id'} }
 
-        write_summary(params, summ_filename)
+        write_summary(params, summ_filename, summ)
 
         # ---- end of sort_and_sim ----------------------------------------------------------------
 
@@ -424,8 +486,8 @@ def do_analysis(summ: Summary):
             return run_madx_for_sorting(q1_errors, pairs)
         
         
-        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating(with_correction=False)
-        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating(with_correction=False)
+        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real(with_correction=False)
+        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real(with_correction=False)
         BETX = q1_BETX + q2_BETX
         BETY = q1_BETY + q2_BETY
 
@@ -446,16 +508,16 @@ def do_analysis(summ: Summary):
         q2_errors.initial_permutation['maxBETXY'] = q1_errors.initial_permutation['maxBETXY'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
 
         
-        (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift(with_correction=False)
-        (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift(with_correction=False)
+        (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_real(with_correction=False)
+        (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_real(with_correction=False)
         DQX = q1_DQX + q2_DQX
         DQY = q1_DQY + q2_DQY
         q2_errors.initial_permutation['DQX']  = q1_errors.initial_permutation['DQX']  = DQX
         q2_errors.initial_permutation['DQY']  = q1_errors.initial_permutation['DQY']  = DQY
         
         
-        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating(with_correction=True)
-        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating(with_correction=True)
+        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real(with_correction=True)
+        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real(with_correction=True)
         BETX = q1_BETX + q2_BETX
         BETY = q1_BETY + q2_BETY
         
@@ -473,8 +535,8 @@ def do_analysis(summ: Summary):
         q2_errors.initial_permutation['maxBETXY_wcor'] = q1_errors.initial_permutation['maxBETXY_wcor'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
 
         
-        (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift(with_correction=True)
-        (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift(with_correction=True)
+        (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_real(with_correction=True)
+        (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_real(with_correction=True)
         DQX = q1_DQX + q2_DQX
         DQY = q1_DQY + q2_DQY
         q2_errors.initial_permutation['DQX_wcor']  = q1_errors.initial_permutation['DQX_wcor']  = DQX
@@ -503,11 +565,11 @@ def do_analysis(summ: Summary):
         # ---- this sorts on the sum of errors (because nearby magnets should self cancel, right? -
         #list_bestscore_q1 = q1_errors.sort_betabeatingXY()
         #list_bestscore_q2 = q2_errors.sort_betabeatingXY()
-        list_bestscore_q1 = q1_errors.sort_def_fn(with_correction=FLAG_WITH_CORRECTION)
-        list_bestscore_q2 = q2_errors.sort_def_fn(with_correction=FLAG_WITH_CORRECTION)
+        list_bestscore_q2 = q2_errors.sort_def_fn() #with_correction=FLAG_WITH_CORRECTION)
+        list_bestscore_q1 = q1_errors.sort_def_fn(other=q2_errors) #,with_correction=FLAG_WITH_CORRECTION)
         
-        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating(with_correction=False)
-        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating(with_correction=False)
+        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real(with_correction=False)
+        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real(with_correction=False)
         BETX = q1_BETX + q2_BETX
         BETY = q1_BETY + q2_BETY
 
@@ -527,16 +589,16 @@ def do_analysis(summ: Summary):
         
         q2_errors.best_permutation_alone['maxBETXY'] = q1_errors.best_permutation_alone['maxBETXY'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
         
-        (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift(with_correction=False)
-        (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift(with_correction=False)
+        (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_real(with_correction=False)
+        (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_real(with_correction=False)
         DQX = q1_DQX + q2_DQX
         DQY = q1_DQY + q2_DQY
         q2_errors.best_permutation_alone['DQX']  = q1_errors.best_permutation_alone['DQX']  = DQX
         q2_errors.best_permutation_alone['DQY']  = q1_errors.best_permutation_alone['DQY']  = DQY
 
         
-        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating(with_correction=True)
-        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating(with_correction=True)
+        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real(with_correction=True)
+        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real(with_correction=True)
         BETX = q1_BETX + q2_BETX
         BETY = q1_BETY + q2_BETY
         
@@ -553,8 +615,8 @@ def do_analysis(summ: Summary):
         
         q2_errors.best_permutation_alone['maxBETXY_wcor'] = q1_errors.best_permutation_alone['maxBETXY_wcor'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
         
-        (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift(with_correction=True)
-        (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift(with_correction=True)
+        (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_real(with_correction=True)
+        (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_real(with_correction=True)
         DQX = q1_DQX + q2_DQX
         DQY = q1_DQY + q2_DQY
         q2_errors.best_permutation_alone['DQX_wcor']  = q1_errors.best_permutation_alone['DQX_wcor']  = DQX
@@ -745,7 +807,7 @@ def sort_betabeating_v2(q1_errors: Q1Pairs, list_q1: np.array, q2_errors: Q2Pair
     print(f"using the diff method")
 
     #score = q1_errors.score_rms_betabeatingXY(q1_errors, q2_errors)
-    score = q1_errors.score_def_fn(q1_errors, q2_errors, with_correction=FLAG_WITH_CORRECTION)
+    score = q1_errors.score_def_fn(q1_errors, q2_errors) #, with_correction=FLAG_WITH_CORRECTION)
     print(f" -- initial score: {score}")
 
     next_progress = 0.1
@@ -761,7 +823,7 @@ def sort_betabeating_v2(q1_errors: Q1Pairs, list_q1: np.array, q2_errors: Q2Pair
             q2_errors.selected_permutation = int(list_q2[i2])
 
             #sum = q1_errors.score_rms_betabeatingXY(q1_errors, q2_errors)
-            sum = q1_errors.score_def_fn(q1_errors, q2_errors, with_correction=FLAG_WITH_CORRECTION)
+            sum = q1_errors.score_def_fn(q1_errors, q2_errors) #, with_correction=FLAG_WITH_CORRECTION)
 
             if sum < score:
                 score = sum
@@ -770,8 +832,8 @@ def sort_betabeating_v2(q1_errors: Q1Pairs, list_q1: np.array, q2_errors: Q2Pair
     q1_errors.selected_permutation = best_comb[0]
     q2_errors.selected_permutation = best_comb[1]
     
-    (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating(with_correction=False)
-    (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating(with_correction=False)
+    (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real(with_correction=False)
+    (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real(with_correction=False)
     BETX = q1_BETX + q2_BETX
     BETY = q1_BETY + q2_BETY
 
@@ -791,15 +853,15 @@ def sort_betabeating_v2(q1_errors: Q1Pairs, list_q1: np.array, q2_errors: Q2Pair
     
     q2_errors.best_permutation_both['maxBETXY'] = q1_errors.best_permutation_both['maxBETXY'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
 
-    (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift(with_correction=False)
-    (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift(with_correction=False)
+    (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_real(with_correction=False)
+    (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_real(with_correction=False)
     DQX = q1_DQX + q2_DQX
     DQY = q1_DQY + q2_DQY
     q2_errors.best_permutation_both['DQX']  = q1_errors.best_permutation_both['DQX']  = DQX
     q2_errors.best_permutation_both['DQY']  = q1_errors.best_permutation_both['DQY']  = DQY
     
-    (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating(with_correction=True)
-    (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating(with_correction=True)
+    (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real(with_correction=True)
+    (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real(with_correction=True)
     BETX = q1_BETX + q2_BETX
     BETY = q1_BETY + q2_BETY
     
@@ -816,8 +878,8 @@ def sort_betabeating_v2(q1_errors: Q1Pairs, list_q1: np.array, q2_errors: Q2Pair
     
     q2_errors.best_permutation_both['maxBETXY_wcor'] = q1_errors.best_permutation_both['maxBETXY_wcor'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
     
-    (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift(with_correction=True)
-    (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift(with_correction=True)
+    (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_real(with_correction=True)
+    (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_real(with_correction=True)
     DQX = q1_DQX + q2_DQX
     DQY = q1_DQY + q2_DQY
     q2_errors.best_permutation_both['DQX_wcor']  = q1_errors.best_permutation_both['DQX_wcor']  = DQX
@@ -837,7 +899,7 @@ def sort_betabeating_worst_v2(q1_errors: Q1Pairs, list_q1: np.array, q2_errors: 
     print(f"using the diff method")
 
     #score = q1_errors.score_rms_betabeatingXY(q1_errors, q2_errors)
-    score = q1_errors.score_def_fn(q1_errors, q2_errors, with_correction=False)
+    score = q1_errors.score_def_fn(q1_errors, q2_errors) #, with_correction=False)
     print(f" -- initial score: {score}")
 
     next_progress = 0.1
@@ -859,7 +921,7 @@ def sort_betabeating_worst_v2(q1_errors: Q1Pairs, list_q1: np.array, q2_errors: 
             q2_errors.selected_permutation = int(list_q2[i2])
 
             #sum = q1_errors.score_rms_betabeatingXY(q1_errors, q2_errors)
-            sum = q1_errors.score_def_fn(q1_errors, q2_errors, with_correction=False)
+            sum = q1_errors.score_def_fn(q1_errors, q2_errors) #, with_correction=False)
             
             list_score[ii] = sum
             list_idxq1[ii] = q1_errors.selected_permutation
@@ -872,8 +934,8 @@ def sort_betabeating_worst_v2(q1_errors: Q1Pairs, list_q1: np.array, q2_errors: 
     q1_errors.selected_permutation = worst_comb[0]
     q2_errors.selected_permutation = worst_comb[1]
     
-    (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating(with_correction=False)
-    (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating(with_correction=False)
+    (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real(with_correction=False)
+    (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real(with_correction=False)
     BETX = q1_BETX + q2_BETX
     BETY = q1_BETY + q2_BETY
 
@@ -893,16 +955,16 @@ def sort_betabeating_worst_v2(q1_errors: Q1Pairs, list_q1: np.array, q2_errors: 
     
     q2_errors.worst_permutation_both['maxBETXY'] = q1_errors.worst_permutation_both['maxBETXY'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
     
-    (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift(with_correction=False)
-    (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift(with_correction=False)
+    (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_real(with_correction=False)
+    (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_real(with_correction=False)
     DQX = q1_DQX + q2_DQX
     DQY = q1_DQY + q2_DQY
     q2_errors.worst_permutation_both['DQX']  = q1_errors.worst_permutation_both['DQX']  = DQX
     q2_errors.worst_permutation_both['DQY']  = q1_errors.worst_permutation_both['DQY']  = DQY
  
     
-    (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating(with_correction=True)
-    (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating(with_correction=True)
+    (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real(with_correction=True)
+    (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real(with_correction=True)
     BETX = q1_BETX + q2_BETX
     BETY = q1_BETY + q2_BETY
     
@@ -919,8 +981,8 @@ def sort_betabeating_worst_v2(q1_errors: Q1Pairs, list_q1: np.array, q2_errors: 
     
     q2_errors.worst_permutation_both['maxBETXY_wcor'] = q1_errors.worst_permutation_both['maxBETXY_wcor'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
             
-    (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift(with_correction=True)
-    (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift(with_correction=True)
+    (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_real(with_correction=True)
+    (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_real(with_correction=True)
     DQX = q1_DQX + q2_DQX
     DQY = q1_DQY + q2_DQY
     q2_errors.worst_permutation_both['DQX_wcor']  = q1_errors.worst_permutation_both['DQX_wcor']  = DQX
@@ -963,8 +1025,8 @@ def scan_limit_MADX(q1_errors, q2_errors, list_wrstscore_q1, list_wrstscore_q2):
             print(e)
             print(f"{ii} = ({q1_errors.selected_permutation} , {q2_errors.selected_permutation})  ->   BAD!")
             
-        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating()
-        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating()
+        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real()
+        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real()
         BETX = q1_BETX + q2_BETX
         BETY = q1_BETY + q2_BETY
     
@@ -990,8 +1052,8 @@ def scan_limit_MADX(q1_errors, q2_errors, list_wrstscore_q1, list_wrstscore_q2):
     #q1_errors.selected_permutation = int(list_idxq1[border_ii])
     #q2_errors.selected_permutation = int(list_idxq2[border_ii])
     
-    #(q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating()
-    #(q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating()
+    #(q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real()
+    #(q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real()
     #BETX = q1_BETX + q2_BETX
     #BETY = q1_BETY + q2_BETY
     

@@ -1,4 +1,5 @@
-from pandas.core.frame import itertools
+#from pandas.core.frame import itertools
+import itertools
 from magnet_errors import *
 from pairs import Pairs, mask_monitor
 from typing import Tuple
@@ -14,16 +15,35 @@ MAGNETS = ["MQXFB.A2L1", "MQXFB.B2L1", "MQXFB.A2R1", "MQXFB.B2R1",
            "MQXFB.A2L5", "MQXFB.B2L5", "MQXFB.A2R5", "MQXFB.B2R5"]
 #MAGNETS = []
 
-AMP_REAL_ERROR = 10  # Full range of integrated gradient error in units
-AMP_MEAS_ERROR = 2  # Random error of measurement
+#AMP_REAL_ERROR = 10  # Full range of integrated gradient error in units
+#AMP_MEAS_ERROR = 2  # Random error of measurement
 
 
 class Q2Pairs(Pairs):
     NAME = "Q2"
-    def __init__(self, real_error, meas_error, optic = None):
-        self.cold_masses = [MagnetError(real_error , meas_error) for _ in range(8)]
+    def __init__(self,
+                 #real_error: float = AMP_REAL_ERROR,
+                 meas_error: float = 0,
+                 cali_error: float = 0,
+                 pres_error: float = 0,
+                 stage: int = 1,
+                 optic = None):
+        self.cold_masses = [MagnetError(ampl_meas=meas_error, ampl_cali=cali_error, ampl_prec=pres_error) for _ in range(8)]
+        
+        self.pairs_average = pd.DataFrame([], index=range(self.get_magnet_count()), 
+                                          columns=range(self.get_magnet_count()) )
+        self.pairs_correction = pd.DataFrame([], index=range(self.get_magnet_count()), 
+                                          columns=range(self.get_magnet_count()) )
+        for mmA in range(self.get_magnet_count()):
+            for mmB in range(mmA,self.get_magnet_count()):
+                self.pairs_average.loc[mmA,mmB]=5e-1*(self.cold_masses[mmA].meas_error +
+                                                      self.cold_masses[mmB].meas_error)
+                self.pairs_average.loc[mmB,mmA]=self.pairs_average.loc[mmA,mmB] 
+                self.pairs_correction.loc[mmA,mmB]=1/(1+1e-4*self.pairs_average.loc[mmA,mmB])
+                self.pairs_correction.loc[mmB,mmA]=self.pairs_correction.loc[mmA,mmB]
+                
         self.selected_permutation = 0
-        self.permutations = list(itertools.permutations(range(8)))
+        
         self.initial_permutation    = {'id':0, 'rmsBETX':0, 'rmsBETY':0, 'rmsBETXY':0, 'maxBETX':0, 'maxBETY':0, 'maxBETXY':0}
         self.best_permutation_alone = {'id':0, 'rmsBETX':0, 'rmsBETY':0, 'rmsBETXY':0, 'maxBETX':0, 'maxBETY':0, 'maxBETXY':0}
         self.best_permutation_both  = {'id':0, 'rmsBETX':0, 'rmsBETY':0, 'rmsBETXY':0, 'maxBETX':0, 'maxBETY':0, 'maxBETXY':0}
@@ -74,7 +94,20 @@ class Q2Pairs(Pairs):
 #             self.responce_Qy = self.responce_Qy * 1.0e-4 * ( np.sin(2*np.pi*Qy) / 2 )
             self.responce_Qx = self.responce_Qx * 1.0e-4 / (4*np.pi)
             self.responce_Qy = self.responce_Qy * 1.0e-4 / (4*np.pi)
-        #self.sign_phase = [-1 if mm[-2:] in ['L1','R5'] else +1 for mm in MAGNETS]
+            
+#         self.monitor_responce_bbetx_rms2 = self.monitor_responce_bbetx.T.dot(self.monitor_responce_bbetx)
+#         self.monitor_responce_bbety_rms2 = self.monitor_responce_bbety.T.dot(self.monitor_responce_bbety)
+        self.monitor_responce_bbetx_rms2 = None
+        self.monitor_responce_bbety_rms2 = None
+        
+        if stage == 1:
+            self.permutations = list(itertools.permutations(range(8)))
+        elif stage == 2:
+            Q2_init = list(itertools.permutations(range(8)))
+            Q2B_allowed = list(itertools.permutations([2*ii+1 for ii in range(4)]))
+            self.permutations = [qq for qq in Q2_init if qq[1::2] in Q2B_allowed]
+        elif stage == 3:
+            raise NotImplementedError("slhfe")
 
     def positions(self):
         return self.permutations[self.selected_permutation]
@@ -90,48 +123,6 @@ class Q2Pairs(Pairs):
     #    """ returns a tuple (magnet_name, betax, betay, sign) """
     #    return (MAGNETS[index], self.BETX[index], self.BETY[index], self.sign_phase[index])
 
-    def get_generated_betabeating(self,with_correction=True):
-        """ returns a tuple (Dbetax, Dbetay) """
-        bbetx=0 ; bbety=0;
-        if self.monitor_responce_bbetx is not None:
-            if with_correction:
-                for ii in range(self.get_pair_count()):
-                    correction, avg, nameA, magnetA, nameB, magnetB = self.get_pair_correction(ii)
-                    
-                    bbetx += correction * (magnetA.real_error - avg) * self.monitor_responce_bbetx[nameA]
-                    bbety += correction * (magnetA.real_error - avg) * self.monitor_responce_bbety[nameA]
-                    
-                    bbetx += correction * (magnetB.real_error - avg) * self.monitor_responce_bbetx[nameB]
-                    bbety += correction * (magnetB.real_error - avg) * self.monitor_responce_bbety[nameB]
-            else:
-                for ii in range(self.get_magnet_count()):
-                    magnet = self.get_magnet(ii)
-                    
-                    bbetx += magnet[1].real_error*self.monitor_responce_bbetx[magnet[0]]
-                    bbety += magnet[1].real_error*self.monitor_responce_bbety[magnet[0]]
-        return (bbetx, bbety)
-
-    def get_generated_tuneshift(self,with_correction=True):
-        """ returns a tuple (DQx, DQy) """
-        DQx=0 ; DQy=0;
-        if self.responce_Qx is not None:
-            if with_correction:
-                for ii in range(self.get_pair_count()):
-                    correction, avg, nameA, magnetA, nameB, magnetB = self.get_pair_correction(ii)
-                    
-                    DQx += correction*(magnetA.real_error - avg)*self.responce_Qx[nameA][0]
-                    DQy += correction*(magnetA.real_error - avg)*self.responce_Qy[nameA][0]
-                    
-                    DQx += correction*(magnetB.real_error - avg)*self.responce_Qx[nameB][0]
-                    DQy += correction*(magnetB.real_error - avg)*self.responce_Qy[nameB][0]
-            else:
-                for ii in range(self.get_magnet_count()):
-                    magnet = self.get_magnet(ii)
-                    
-                    DQx += magnet[1].real_error*self.responce_Qx[magnet[0]][0]
-                    DQy += magnet[1].real_error*self.responce_Qy[magnet[0]][0]
-        return (DQx, DQy)
-
     def get_pair_count(self):
         return len(MAGNETS) // 2
 
@@ -142,13 +133,16 @@ class Q2Pairs(Pairs):
         assert index < self.get_pair_count()
         return (self.get_magnet(2*index), self.get_magnet(2*index+1))
         
-    def get_pair_correction(self, index: int) -> Tuple[float, float, str, MagnetError, str, MagnetError]:
-        magnetA, magnetB = self.get_pair_names_magnet(index)
-        avg = 5e-1*(magnetA[1].real_error + magnetB[1].real_error)
-        return ( 1/(1 + 1e-4*avg), avg, *magnetA, *magnetB )
+    #def get_pair_correction(self, index: int) -> Tuple[float, float, str, MagnetError, str, MagnetError]:
+    #    magnetA, magnetB = self.get_pair_names_magnet(index)
+    #    avg = 5e-1*(magnetA[1].real_error + magnetB[1].real_error)
+    #    return ( 1/(1 + 1e-4*avg), avg, *magnetA, *magnetB )
 
     def get_pair_names(self, index: int) -> Tuple[str, str]:
         return (self.get_magnet(2*index)[0], self.get_magnet(2*index+1)[0])
+    
+    def get_pair_index(self, index: int) -> Tuple[int, int]:
+        return (self.positions()[2*index], self.positions()[2*index+1])
 
     def __getitem__(self, index):
         return self.cold_masses[self.positions()[index]]

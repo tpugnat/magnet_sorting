@@ -1,6 +1,7 @@
 from magnet_errors import *
 from typing import Tuple
 import numpy as np
+import pandas as pd
 
 # threshold on correction strengths, if the magnet error is below this value (relative for now)
 # we won't (be able) to do corrections on it
@@ -150,109 +151,109 @@ class Pairs:
     #    return np.sqrt( score_bbx**2 + score_bby**2 )
 
 
+    #@staticmethod
+    #def score_maxabs_betabeatingX(errors,errors_bis=None,with_correction=True):
+    #    """
+    #    Sorts according to sum of pair elements
+    #    (this favors errors that naturally cancel each other)
+    #    """
+        
+    #    bbeating = errors.get_generated_betabeating(with_correction=with_correction)
+    #    bbeating_bis = [0,0]
+    #    if errors_bis is not None:
+    #        bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
+        
+    #    score_bbx = np.max(abs(bbeating[0]+bbeating_bis[0]))
+    #    #score_bby = np.max(abs(bbeating[1]+bbeating_bis[1]))
+
+    #    return score_bbx
+
+
+    #@staticmethod
+    #def score_rms_betabeatingX(errors,errors_bis=None,with_correction=True):
+    #    """
+    #    Sorts according to sum of pair elements
+    #    (this favors errors that naturally cancel each other)
+    #    """
+        
+    #    bbeating = errors.get_generated_betabeating(with_correction=with_correction)
+    #    bbeating_bis = [0,0]
+    #    if errors_bis is not None:
+    #        bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
+        
+    #    score_bbx = rms(bbeating[0]+bbeating_bis[0])
+    #    #score_bby = rms(bbeating[1]+bbeating_bis[1])
+
+    #    return score_bbx
+        
+        
+
+
+    #@staticmethod
+    #def score_maxabs_betabeatingXY(errors,errors_bis=None,with_correction=True):
+    #    """
+    #    Sorts according to sum of pair elements
+    #    (this favors errors that naturally cancel each other)
+    #    """
+        
+    #    bbeating = errors.get_generated_betabeating(with_correction=with_correction)
+    #    bbeating_bis = [0,0]
+    #    if errors_bis is not None:
+    #        bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
+        
+    #    score_bbx = np.max(abs(bbeating[0]+bbeating_bis[0]))
+    #    score_bby = np.max(abs(bbeating[1]+bbeating_bis[1]))
+
+    #    return np.sqrt( score_bbx**2 + score_bby**2 )
+
+
+    #@staticmethod
+    #def score_max_betabeatingXY(errors,errors_bis=None,with_correction=True):
+    #    """
+    #    Sorts according to sum of pair elements
+    #    (this favors errors that naturally cancel each other)
+    #    """
+        
+    #    bbeating = errors.get_generated_betabeating(with_correction=with_correction)
+    #    bbeating_bis = [0,0]
+    #    if errors_bis is not None:
+    #        bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
+        
+    #    score_bbx = np.max(bbeating[0]+bbeating_bis[0])
+    #    score_bby = np.max(bbeating[1]+bbeating_bis[1])
+
+    #    return np.sqrt( score_bbx**2 + score_bby**2 )
+
+
+    #@staticmethod
+    #def score_min_betabeatingXY(errors,errors_bis=None,with_correction=True):
+    #    """
+    #    Sorts according to sum of pair elements
+    #    (this favors errors that naturally cancel each other)
+    #    """
+        
+    #    bbeating = errors.get_generated_betabeating(with_correction=with_correction)
+    #    bbeating_bis = [0,0]
+    #    if errors_bis is not None:
+    #        bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
+        
+    #    score_bbx = np.min(bbeating[0]+bbeating_bis[0])
+    #    score_bby = np.min(bbeating[1]+bbeating_bis[1])
+
+    #    return np.sqrt( score_bbx**2 + score_bby**2 )
+
+
     @staticmethod
-    def score_maxabs_betabeatingX(errors,errors_bis=None,with_correction=True):
+    def score_rms_betabeatingXY_real(errors,errors_bis=None,with_correction=True):
         """
         Sorts according to sum of pair elements
         (this favors errors that naturally cancel each other)
         """
         
-        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
+        bbeating = errors.get_generated_betabeating_real(with_correction=with_correction)
         bbeating_bis = [0,0]
         if errors_bis is not None:
-            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
-        
-        score_bbx = np.max(abs(bbeating[0]+bbeating_bis[0]))
-        #score_bby = np.max(abs(bbeating[1]+bbeating_bis[1]))
-
-        return score_bbx
-
-
-    @staticmethod
-    def score_rms_betabeatingX(errors,errors_bis=None,with_correction=True):
-        """
-        Sorts according to sum of pair elements
-        (this favors errors that naturally cancel each other)
-        """
-        
-        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
-        bbeating_bis = [0,0]
-        if errors_bis is not None:
-            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
-        
-        score_bbx = rms(bbeating[0]+bbeating_bis[0])
-        #score_bby = rms(bbeating[1]+bbeating_bis[1])
-
-        return score_bbx
-        
-        
-
-
-    @staticmethod
-    def score_maxabs_betabeatingXY(errors,errors_bis=None,with_correction=True):
-        """
-        Sorts according to sum of pair elements
-        (this favors errors that naturally cancel each other)
-        """
-        
-        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
-        bbeating_bis = [0,0]
-        if errors_bis is not None:
-            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
-        
-        score_bbx = np.max(abs(bbeating[0]+bbeating_bis[0]))
-        score_bby = np.max(abs(bbeating[1]+bbeating_bis[1]))
-
-        return np.sqrt( score_bbx**2 + score_bby**2 )
-
-
-    @staticmethod
-    def score_max_betabeatingXY(errors,errors_bis=None,with_correction=True):
-        """
-        Sorts according to sum of pair elements
-        (this favors errors that naturally cancel each other)
-        """
-        
-        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
-        bbeating_bis = [0,0]
-        if errors_bis is not None:
-            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
-        
-        score_bbx = np.max(bbeating[0]+bbeating_bis[0])
-        score_bby = np.max(bbeating[1]+bbeating_bis[1])
-
-        return np.sqrt( score_bbx**2 + score_bby**2 )
-
-
-    @staticmethod
-    def score_min_betabeatingXY(errors,errors_bis=None,with_correction=True):
-        """
-        Sorts according to sum of pair elements
-        (this favors errors that naturally cancel each other)
-        """
-        
-        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
-        bbeating_bis = [0,0]
-        if errors_bis is not None:
-            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
-        
-        score_bbx = np.min(bbeating[0]+bbeating_bis[0])
-        score_bby = np.min(bbeating[1]+bbeating_bis[1])
-
-        return np.sqrt( score_bbx**2 + score_bby**2 )
-
-
-    @staticmethod
-    def score_rms_betabeatingXY(errors,errors_bis=None,with_correction=True):
-        """
-        Sorts according to sum of pair elements
-        (this favors errors that naturally cancel each other)
-        """
-        
-        bbeating = errors.get_generated_betabeating(with_correction=with_correction)
-        bbeating_bis = [0,0]
-        if errors_bis is not None:
-            bbeating_bis = errors_bis.get_generated_betabeating(with_correction=with_correction)
+            bbeating_bis = errors_bis.get_generated_betabeating_real(with_correction=with_correction)
         
         score_bbx = rms(bbeating[0]+bbeating_bis[0])
         score_bby = rms(bbeating[1]+bbeating_bis[1])
@@ -260,7 +261,69 @@ class Pairs:
         return np.sqrt( score_bbx**2 + score_bby**2 )
 
 
-    def sort(self, sort_fn,with_correction=True):
+    @staticmethod
+    def score_rms_betabeatingXY_meas(errors,errors_bis=None,with_correction=True):
+        """
+        Sorts according to sum of pair elements
+        (this favors errors that naturally cancel each other)
+        """
+        
+        bbeating = errors.get_generated_betabeating_meas(with_correction=with_correction)
+        bbeating_bis = [0,0]
+        if errors_bis is not None:
+            bbeating_bis = errors_bis.get_generated_betabeating_meas(with_correction=with_correction)
+        
+        score_bbx = rms(bbeating[0]+bbeating_bis[0])
+        score_bby = rms(bbeating[1]+bbeating_bis[1])
+
+        return np.sqrt( score_bbx**2 + score_bby**2 )
+
+
+    @staticmethod
+    def score_rms2_betabeatingXY_nocorrb2_meas(errors,errors_bis=None): #,with_correction=True
+        """
+        Sorts according to sum of pair elements
+        (this favors errors that naturally cancel each other)
+        """
+        
+        rms2_bbetx, rms2_bbety = errors.get_generated_rms2_betabeating_nocorrb2_meas(other=errors_bis)
+        return rms2_bbetx + rms2_bbety
+
+
+    @staticmethod
+    def score_rms2_betabeatingXY_wicorrb2_meas(errors,errors_bis=None): #,with_correction=True
+        """
+        Sorts according to sum of pair elements
+        (this favors errors that naturally cancel each other)
+        """
+        
+        rms2_bbetx, rms2_bbety = errors.get_generated_rms2_betabeating_wicorrb2_meas(other=errors_bis)
+        return rms2_bbetx + rms2_bbety
+
+
+    @staticmethod
+    def score_rms2_betabeatingXY_nocorrb2_real(errors,errors_bis=None): #,with_correction=True
+        """
+        Sorts according to sum of pair elements
+        (this favors errors that naturally cancel each other)
+        """
+        
+        rms2_bbetx, rms2_bbety = errors.get_generated_rms2_betabeating_nocorrb2_real(other=errors_bis)
+        return rms2_bbetx + rms2_bbety
+
+
+    @staticmethod
+    def score_rms2_betabeatingXY_wicorrb2_real(errors,errors_bis=None): #,with_correction=True
+        """
+        Sorts according to sum of pair elements
+        (this favors errors that naturally cancel each other)
+        """
+        
+        rms2_bbetx, rms2_bbety = errors.get_generated_rms2_betabeating_wicorrb2_real(other=errors_bis)
+        return rms2_bbetx + rms2_bbety
+
+
+    def sort(self, sort_fn, other=None): #, with_correction=True
         """
         Performs the sorting, i.e. brute force calculates the score for each permutation and selects
         the best one.
@@ -285,7 +348,7 @@ class Pairs:
         print(f"searching for best combination in {len(self.permutations)} permutations")
         print(f"using the diff method")
 
-        score = sort_fn(self,with_correction=with_correction)
+        score = sort_fn(self,errors_bis=other) #,with_correction=with_correction
         print(f" -- initial score: {score}")
 
         next_progress = 0.1
@@ -299,7 +362,7 @@ class Pairs:
 
             self.selected_permutation = i
 
-            sum = sort_fn(self,with_correction=with_correction)
+            sum = sort_fn(self,errors_bis=other) #,with_correction=with_correction
             
             list_score[i] = sum
 
@@ -324,9 +387,9 @@ class Pairs:
     #    """ Convenience method for performing the sorting according to sum with respect to the betas"""
     #    return self.sort(self.score_sum_with_beta_as_weight)
 
-    def sort_def_fn(self,with_correction=True):
+    def sort_def_fn(self, other=None): #,with_correction=True
         """ Convenience method for performing the sorting according to beta-beating expression"""
-        return self.sort(self.score_def_fn,with_correction=with_correction)
+        return self.sort(self.score_def_fn, other=other) #,with_correction=with_correction)
 
     def sort_rmsbetabeatingXY(self,with_correction=True):
         """ Convenience method for performing the sorting according to beta-beating expression"""
@@ -343,6 +406,193 @@ class Pairs:
     def sort_maxbetabeatingX(self,with_correction=True):
         """ Convenience method for performing the sorting according to beta-beating expression"""
         return self.sort(self.score_maxabs_betabeatingX,with_correction=with_correction)
+        
+    def get_pair_correction(self, index: int):
+        idxA, idxB = self.get_pair_index(index)
+        magnetA, magnetB = self.get_pair_names_magnet(index)
+        return ( self.pairs_correction.loc[idxA,idxB], self.pairs_average.loc[idxA,idxB], *magnetA, *magnetB )
+
+    def get_generated_betabeating_real(self,with_correction=True):
+        """ returns a tuple (Dbetax, Dbetay) """
+        bbetx=0 ; bbety=0;
+        if self.monitor_responce_bbetx is not None:
+            if with_correction:
+                for ii in range(self.get_pair_count()):
+                    correction, avg, nameA, magnetA, nameB, magnetB = self.get_pair_correction(ii)
+                    
+                    bbetx += correction * (magnetA.real_error - avg) * self.monitor_responce_bbetx[nameA]
+                    bbety += correction * (magnetA.real_error - avg) * self.monitor_responce_bbety[nameA]
+                    
+                    bbetx += correction * (magnetB.real_error - avg) * self.monitor_responce_bbetx[nameB]
+                    bbety += correction * (magnetB.real_error - avg) * self.monitor_responce_bbety[nameB]
+            else:
+                for ii in range(self.get_magnet_count()):
+                    magnet = self.get_magnet(ii)
+                    
+                    bbetx += magnet[1].real_error*self.monitor_responce_bbetx[magnet[0]]
+                    bbety += magnet[1].real_error*self.monitor_responce_bbety[magnet[0]]
+        return (bbetx, bbety)
+
+    def get_generated_betabeating_meas(self,with_correction=True):
+        """ returns a tuple (Dbetax, Dbetay) """
+        bbetx=0 ; bbety=0;
+        if self.monitor_responce_bbetx is not None:
+            if with_correction:
+                for ii in range(self.get_pair_count()):
+                    correction, avg, nameA, magnetA, nameB, magnetB = self.get_pair_correction(ii)
+                    
+                    bbetx += correction * (magnetA.meas_error - avg) * self.monitor_responce_bbetx[nameA]
+                    bbety += correction * (magnetA.meas_error - avg) * self.monitor_responce_bbety[nameA]
+                    
+                    bbetx += correction * (magnetB.meas_error - avg) * self.monitor_responce_bbetx[nameB]
+                    bbety += correction * (magnetB.meas_error - avg) * self.monitor_responce_bbety[nameB]
+            else:
+                for ii in range(self.get_magnet_count()):
+                    magnet = self.get_magnet(ii)
+                    
+                    bbetx += magnet[1].meas_error*self.monitor_responce_bbetx[magnet[0]]
+                    bbety += magnet[1].meas_error*self.monitor_responce_bbety[magnet[0]]
+        return (bbetx, bbety)
+
+    def get_generated_tuneshift_real(self,with_correction=True):
+        """ returns a tuple (DQx, DQy) """
+        DQx=0 ; DQy=0;
+        if self.responce_Qx is not None:
+            if with_correction:
+                for ii in range(self.get_pair_count()):
+                    correction, avg, nameA, magnetA, nameB, magnetB = self.get_pair_correction(ii)
+                    
+                    DQx += correction*(magnetA.real_error - avg)*self.responce_Qx[nameA][0]
+                    DQy += correction*(magnetA.real_error - avg)*self.responce_Qy[nameA][0]
+                    
+                    DQx += correction*(magnetB.real_error - avg)*self.responce_Qx[nameB][0]
+                    DQy += correction*(magnetB.real_error - avg)*self.responce_Qy[nameB][0]
+            else:
+                for ii in range(self.get_magnet_count()):
+                    magnet = self.get_magnet(ii)
+                    
+                    DQx += magnet[1].real_error*self.responce_Qx[magnet[0]][0]
+                    DQy += magnet[1].real_error*self.responce_Qy[magnet[0]][0]
+        return (DQx, DQy)
+
+    def get_generated_tuneshift_meas(self,with_correction=True):
+        """ returns a tuple (DQx, DQy) """
+        DQx=0 ; DQy=0;
+        if self.responce_Qx is not None:
+            if with_correction:
+                for ii in range(self.get_pair_count()):
+                    correction, avg, nameA, magnetA, nameB, magnetB = self.get_pair_correction(ii)
+                    
+                    DQx += correction*(magnetA.meas_error - avg)*self.responce_Qx[nameA][0]
+                    DQy += correction*(magnetA.meas_error - avg)*self.responce_Qy[nameA][0]
+                    
+                    DQx += correction*(magnetB.meas_error - avg)*self.responce_Qx[nameB][0]
+                    DQy += correction*(magnetB.meas_error - avg)*self.responce_Qy[nameB][0]
+            else:
+                for ii in range(self.get_magnet_count()):
+                    magnet = self.get_magnet(ii)
+                    
+                    DQx += magnet[1].meas_error*self.responce_Qx[magnet[0]][0]
+                    DQy += magnet[1].meas_error*self.responce_Qy[magnet[0]][0]
+        return (DQx, DQy)
+
+
+    def get_generated_rms2_betabeating_nocorrb2_real(self,other=None): #,with_correction=False
+        """ returns a tuple (Dbetax, Dbetay) """
+        rms2_bbetx=0 ; rms2_bbety=0;
+
+        #if self.monitor_responce_bbetx_rms2 is not None:
+        strength_per_magnet = {nn:0 for nn in self.monitor_responce_bbetx_rms2.columns}
+        for ii in range(self.get_magnet_count()):
+            name, magnet = self.get_magnet(ii)
+            strength_per_magnet[name] = magnet.real_error
+
+        if other is not None:
+            for ii in range(other.get_magnet_count()):
+                name, magnet = other.get_magnet(ii)
+                strength_per_magnet[name] = magnet.real_error
+
+        strength_per_magnet = pd.Series(strength_per_magnet)
+
+        rms2_bbetx = strength_per_magnet.dot(strength_per_magnet.dot(self.monitor_responce_bbetx_rms2))
+        rms2_bbety = strength_per_magnet.dot(strength_per_magnet.dot(self.monitor_responce_bbety_rms2))
+
+        return (rms2_bbetx, rms2_bbety)
+
+
+    def get_generated_rms2_betabeating_wicorrb2_real(self,other=None): #,with_correction=True):
+        """ returns a tuple (Dbetax, Dbetay) """
+        rms2_bbetx=0 ; rms2_bbety=0;
+
+        #if self.monitor_responce_bbetx_rms2 is not None:
+        strength_per_magnet = {nn:0 for nn in self.monitor_responce_bbetx_rms2.columns}
+
+        for ii in range(self.get_pair_count()):
+            correction, avg, nameA, magnetA, nameB, magnetB = self.get_pair_correction(ii)
+            strength_per_magnet[nameA] = correction * (magnetA.real_error - avg)
+            strength_per_magnet[nameB] = correction * (magnetB.real_error - avg)
+
+        if other is not None:
+            for ii in range(other.get_pair_count()):
+                correction, avg, nameA, magnetA, nameB, magnetB = other.get_pair_correction(ii)
+                strength_per_magnet[nameA] = correction * (magnetA.real_error - avg)
+                strength_per_magnet[nameB] = correction * (magnetB.real_error - avg)
+
+        strength_per_magnet = pd.Series(strength_per_magnet)
+
+        rms2_bbetx = strength_per_magnet.dot(strength_per_magnet.dot(self.monitor_responce_bbetx_rms2))
+        rms2_bbety = strength_per_magnet.dot(strength_per_magnet.dot(self.monitor_responce_bbety_rms2))
+
+        return (rms2_bbetx, rms2_bbety)
+
+
+    def get_generated_rms2_betabeating_nocorrb2_meas(self,other=None): #,with_correction=False
+        """ returns a tuple (Dbetax, Dbetay) """
+        rms2_bbetx=0 ; rms2_bbety=0;
+
+        #if self.monitor_responce_bbetx_rms2 is not None:
+        strength_per_magnet = {nn:0 for nn in self.monitor_responce_bbetx_rms2.columns}
+        for ii in range(self.get_magnet_count()):
+            name, magnet = self.get_magnet(ii)
+            strength_per_magnet[name] = magnet.meas_error
+
+        if other is not None:
+            for ii in range(other.get_magnet_count()):
+                name, magnet = other.get_magnet(ii)
+                strength_per_magnet[name] = magnet.meas_error
+
+        strength_per_magnet = pd.Series(strength_per_magnet)
+
+        rms2_bbetx = strength_per_magnet.dot(strength_per_magnet.dot(self.monitor_responce_bbetx_rms2))
+        rms2_bbety = strength_per_magnet.dot(strength_per_magnet.dot(self.monitor_responce_bbety_rms2))
+
+        return (rms2_bbetx, rms2_bbety)
+
+
+    def get_generated_rms2_betabeating_wicorrb2_meas(self,other=None): #,with_correction=True):
+        """ returns a tuple (Dbetax, Dbetay) """
+        rms2_bbetx=0 ; rms2_bbety=0;
+
+        #if self.monitor_responce_bbetx_rms2 is not None:
+        strength_per_magnet = {nn:0 for nn in self.monitor_responce_bbetx_rms2.columns}
+
+        for ii in range(self.get_pair_count()):
+            correction, avg, nameA, magnetA, nameB, magnetB = self.get_pair_correction(ii)
+            strength_per_magnet[nameA] = correction * (magnetA.meas_error - avg)
+            strength_per_magnet[nameB] = correction * (magnetB.meas_error - avg)
+
+        if other is not None:
+            for ii in range(other.get_pair_count()):
+                correction, avg, nameA, magnetA, nameB, magnetB = other.get_pair_correction(ii)
+                strength_per_magnet[nameA] = correction * (magnetA.meas_error - avg)
+                strength_per_magnet[nameB] = correction * (magnetB.meas_error - avg)
+
+        strength_per_magnet = pd.Series(strength_per_magnet)
+
+        rms2_bbetx = strength_per_magnet.dot(strength_per_magnet.dot(self.monitor_responce_bbetx_rms2))
+        rms2_bbety = strength_per_magnet.dot(strength_per_magnet.dot(self.monitor_responce_bbety_rms2))
+
+        return (rms2_bbetx, rms2_bbety)
 
 
 class CorrectabilityError(Exception):
