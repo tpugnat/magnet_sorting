@@ -1,0 +1,70 @@
+
+option,-echo,-info;
+call,file="acc-models-lhc/lhc.seq";
+!call,file="acc-models-lhc/lhc_hl16.seq";
+call,file="acc-models-lhc/hllhc_sequence.madx";
+call,file="acc-models-lhc/toolkit/macro.madx";
+
+SYSTEM, "mkdir -p temp ../model1_ft/";
+
+call, file = "macros/general.macros.madx";
+call, file = "macros/lhc.macros.madx";
+call, file = "macros/lhc.macros.run3.madx";
+call, file = "macros/observation_points.madx";
+
+! --------------------------------------------------------------------------------------------------
+
+do_tracking(filename): macro = {
+  ! Tracking routine, will output file named "trackone"
+  TRACK, FILE=filename, ONEPASS=True, DUMP=True, ONETABLE=TRUE; ! ONETABLE puts observation from all points in the same file (instead of one file per observation point)
+  START, X=1.0e-7, Y=1.0e-7;
+  exec, define_madx_observation_points(); ! Defined all BPMs as observation points
+  RUN, TURNS=6000;
+  !RUN, TURNS=10800;
+  ENDTRACK;
+}
+
+do_ir_correctors(filename): macro = {
+    select, clear;
+    select, pattern="^M.*";
+}
+! --------------------------------------------------------------------------------------------------
+
+
+! --------------------------------------------------------------------------------------------------
+
+exec,mk_beam(7000);
+
+!call,file="acc-models-lhc/strengths/ramp/opt_ramp_6000_thin.madx";
+!call,file="acc-models-lhc/strengths/ramp/opt_ramp_500_1500_thin.madx";
+!call,file="acc-models-lhc/strengths/newir3ir7/opt_round_150_1500_newir37.madx";
+call,file="acc-models-lhc/strengths/round/opt_round_150_1500.madx";
+
+
+exec, myslice;
+
+call,file="acc-models-lhc/toolkit/rematch_hllhc.madx";
+
+exec,check_ip(b1);
+exec,check_ip(b2);
+
+print, text="BEFORE SAVE";
+use, sequence=LHCB1;
+Save, sequence=lhcb1, file="../model1_ft/hllhc_lhcb1.seq";
+use, sequence=LHCB2;
+Save, sequence=lhcb2, file="../model1_ft/hllhc_lhcb2.seq";
+print, text="AFTER SAVE";
+
+
+use, sequence=LHCB1;
+twiss;
+
+exec, do_twiss_monitors(lhcb1, "../model1_ft/twiss.dat");
+exec, do_twiss_elements(lhcb1, "../model1_ft/twiss_elements.dat");
+!exec, do_twiss_monitors(lhcb1, "twiss.dat");
+!exec, do_twiss_elements(lhcb1, "twiss_elements.dat");
+
+return;
+! model
+use, sequence=lhcb1;
+exec, do_twiss_monitors(lhcb1, "twiss_model_b1.tfs", 0);
