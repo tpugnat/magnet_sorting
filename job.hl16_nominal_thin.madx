@@ -1,9 +1,4 @@
 option,-echo,-info;
-!call,file="acc-models-lhc/lhc.seq";
-!call,file="acc-models-lhc/lhc_hl16.seq";
-!call,file="acc-models-lhc/hllhc_sequence.madx";
-
-!SYSTEM, "mkdir -p temp ../model1_ft/";
 
 
 call, file="../model1_ft/hllhc_lhcb1.seq";
