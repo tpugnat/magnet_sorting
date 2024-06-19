@@ -1,20 +1,18 @@
 option,-echo,-info;
-!call,file="acc-models-lhc/lhc.seq";
-!call,file="acc-models-lhc/lhc_hl16.seq";
-!call,file="acc-models-lhc/hllhc_sequence.madx";
-
-SYSTEM, "mkdir -p temp ../model1_ft/";
+!call,file="../model/acc-models-lhc/lhc.seq";
+!call,file="../model/acc-models-lhc/lhc_hl16.seq";
+!call,file="../model/acc-models-lhc/hllhc_sequence.madx";
 
 
 call, file="../model1_ft/hllhc_lhcb1.seq";
 call, file="../model1_ft/hllhc_lhcb2.seq";
 
-call,file="acc-models-lhc/toolkit/macro.madx";
+call,file="../model/acc-models-lhc/toolkit/macro.madx";
 
-call, file = "macros/general.macros.madx";
-call, file = "macros/lhc.macros.madx";
-call, file = "macros/lhc.macros.run3.madx";
-call, file = "macros/observation_points.madx";
+call, file = "../macros/general.macros.madx";
+call, file = "../macros/lhc.macros.madx";
+call, file = "../macros/lhc.macros.run3.madx";
+call, file = "../macros/observation_points.madx";
 
 ! --------------------------------------------------------------------------------------------------
 

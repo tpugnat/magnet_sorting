@@ -59,14 +59,14 @@ DO_CORR = True
 
 # error specification, this has to be kept up to date with estimations from Massimo and Ezio 
 # (initially AMP_REAL_ERROR = 50 , AMP_MEAS_ERROR = 2)
-AMP_MEAS_ERROR = 10;
+AMP_MEAS_ERROR = 15;
 AMP_CALI_ERROR = 0;
 AMP_PRES_ERROR = 0;
 STAGE = 2;
 
 
 # maximum number of simulations, `Ctrl-C` stops the program early
-MAX_SIMS = 1 #1000 #100 #1 #1000
+MAX_SIMS = 1000 #100 #1 #1000
 
 NUMB_PERMUT_CROSSSCORING = 100
 
@@ -477,7 +477,7 @@ def do_analysis(summ: Summary):
         def sort_on_bbeat_q2(pairs: Q2Pairs):
             return run_madx_for_sorting(q1_errors, pairs)
         
-        q1_errors.best_permutation_alone, q2_errors.best_permutation_alone = prepare_data_for_analysis(q1_errors, q2_errors)
+        q1_errors.initial_permutation, q2_errors.initial_permutationq = prepare_data_for_analysis(q1_errors, q2_errors)
         
 #         (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real(with_calibration=False)
 #         (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real(with_calibration=False)
@@ -648,7 +648,7 @@ def do_analysis(summ: Summary):
 
 
 
-def generate optic():
+def generate_optic():
     if not os.path.exists("model1_ft/hllhc_lhcb1.seq"): 
         # remove twiss output, its existance after running madx indicates success
         system(f"cp job.hl16_nominal.madx model/run_job.hl16_nominal.madx")

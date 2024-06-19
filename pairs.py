@@ -420,12 +420,12 @@ class Pairs:
                 self.pairs_average_meas.loc[mmA,mmB]   = 5e-1*(self.cold_masses[mmA].meas_error +
                                                                self.cold_masses[mmB].meas_error)
                 self.pairs_average_meas.loc[mmB,mmA]   = self.pairs_average_meas.loc[mmA,mmB] 
-                self.pairs_calibration_meas.loc[mmA,mmB]= 1/(1+1e-4*self.pairs_average.loc[mmA,mmB])
+                self.pairs_calibration_meas.loc[mmA,mmB]= 1/(1+1e-4*self.pairs_average_meas.loc[mmA,mmB])
                 self.pairs_calibration_meas.loc[mmB,mmA]= self.pairs_calibration_meas.loc[mmA,mmB]
                 
                 self.pairs_average_real.loc[mmA,mmB]   = 5e-1*(self.cold_masses[mmA].real_error + 
                                                                self.cold_masses[mmB].real_error)
-                self.pairs_average_real.loc[mmB,mmA]   = self.pairs_average.loc[mmA,mmB] 
+                self.pairs_average_real.loc[mmB,mmA]   = self.pairs_average_real.loc[mmA,mmB] 
                 self.pairs_calibration_real.loc[mmA,mmB]= 1/(1+1e-4*self.pairs_average_real.loc[mmA,mmB])
                 self.pairs_calibration_real.loc[mmB,mmA]= self.pairs_calibration_real.loc[mmA,mmB]
     
