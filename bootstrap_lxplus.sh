@@ -22,7 +22,7 @@ fi
 
 # --- setup python ---------------------------------------------------------------------------------
 if [[ ! -d venv${LINUX_VERSION} ]]; then
-    python3 -m venv venv${LINUX_VERSION} --no-site-packages func-adl-servicex servicex
+    python3 -m venv venv${LINUX_VERSION} #--no-site-packages func-adl-servicex servicex
 fi
 . venv${LINUX_VERSION}/bin/activate
 
