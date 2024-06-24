@@ -38,7 +38,7 @@ if [[ ! -d omc3 ]]; then
 
     cd ..
 fi
-pip install -e omc3
+#pip install -e omc3
 
 # --- setup model output ---------------------------------------------------------------------------
 mkdir model
