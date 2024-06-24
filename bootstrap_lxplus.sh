@@ -27,8 +27,8 @@ fi
 . venv${LINUX_VERSION}/bin/activate
 
 pip install matplotlib numpy
-pip install 'pandas~=1.0'
-pip install 'idna==2.10'
+#pip install 'pandas~=1.0'
+#pip install 'idna==2.10'
 
 if [[ ! -d omc3 ]]; then
     git clone git@github.com:pylhc/omc3.git
