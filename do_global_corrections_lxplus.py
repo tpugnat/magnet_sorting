@@ -1,7 +1,9 @@
 from datetime import datetime
 import os
 from os import system
+import sys
 from subprocess import Popen
+sys.path.append("omc3")
 from omc3.scripts.fake_measurement_from_model import generate as fake_measurement
 from omc3 import global_correction
 from omc3.response_creator import create_response_entrypoint
