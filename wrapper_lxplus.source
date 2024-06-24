@@ -1,0 +1,24 @@
+#!/bin/bash
+
+
+MAGNET_SORTING="$(pwd -P)"
+
+
+# Manage lxplus linux version
+locfunc=`cat /etc/*-release | grep -i "VERSION_ID="`
+if [[ $locfunc == *"7"* ]]; then
+    echo " * LOAD CENTOS7 ENV"
+    source /cvmfs/sft.cern.ch/lcg/views/LCG_104a/x86_64-centos7-gcc11-opt/setup.sh
+    LINUX_VERSION=7
+elif [[ $locfunc == *"8"* ]]; then
+    echo " * LOAD CENTOS8 ENV"
+    source /cvmfs/sft.cern.ch/lcg/views/LCG_104a/x86_64-centos8-gcc11-opt/setup.sh
+    LINUX_VERSION=8
+else
+    echo " * LOAD EL9 ENV"
+    source /cvmfs/sft.cern.ch/lcg/views/LCG_104a/x86_64-el9-gcc11-opt/setup.sh
+    LINUX_VERSION=9
+fi
+
+# --- setup python ---------------------------------------------------------------------------------
+. venv${LINUX_VERSION}/bin/activate
