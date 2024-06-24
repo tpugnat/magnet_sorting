@@ -27,7 +27,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 MADX = "/home/thpugnat/Documents/CERN/madx"
 
 # path to twiss output
-MODEL_TWISS = "model/twiss_err_b1.tfs"
+MODEL_NUMBER= ""
+MODEL_TWISS = f"model{MODEL_NUMBER}/twiss_err_b1.tfs"
 
 # variable categories for global corrections
 # these are the magnet circuits used to correct, check that they match the triplets you want to correct
@@ -48,7 +49,7 @@ VAR_CATS = [
 TYPE_SCORE = 'RMS_XY'; 
 # TYPE_ERROR = 'REAL'; 
 TYPE_RAND  = 'Gaussian'; 
-FLAG_WITH_calibration = False
+FLAG_WITH_calibration = True; #False
 
 
 # turn off certain parts of the sim, leave all at `TRUE` for more than one simulation or you will
@@ -59,7 +60,7 @@ DO_CORR = True
 
 # error specification, this has to be kept up to date with estimations from Massimo and Ezio 
 # (initially AMP_REAL_ERROR = 50 , AMP_MEAS_ERROR = 2)
-AMP_MEAS_ERROR = 15;
+AMP_MEAS_ERROR = 15; # 25; # 15;
 AMP_CALI_ERROR = 0;
 AMP_PRES_ERROR = 0;
 STAGE = 2;
@@ -96,6 +97,15 @@ FLAG_DEBUG=False
 def main():
     """
     """
+    if not os.path.exists(f"model/"):
+        raise FileNotFoundError("could not find model/")
+    
+    if not os.path.exists(f"model{MODEL_NUMBER}/") and MODEL_NUMBER:
+        os.makedirs(f"model{MODEL_NUMBER}/")
+        cwd = os.getcwd()
+        os.symlink(Path(cwd,'model/acc-models-lhc'), f"model{MODEL_NUMBER}/acc-models-lhc")
+        os.symlink(Path(cwd,'macros'), f"model{MODEL_NUMBER}/macros")
+        
 
     summ = Summary()
 
@@ -651,22 +661,22 @@ def do_analysis(summ: Summary):
 def generate_optic():
     if not os.path.exists("model1_ft/hllhc_lhcb1.seq"): 
         # remove twiss output, its existance after running madx indicates success
-        system(f"cp job.hl16_nominal.madx model/run_job.hl16_nominal.madx")
+        system(f"cp job.hl16_nominal.madx model{MODEL_NUMBER}/run_job.hl16_nominal.madx")
 
         # remove twiss output, its existance after running madx indicates success
         system(f"rm {MODEL_TWISS}")
 
         with open(os.devnull, "w") as devnull:
             #Popen([MADX, "run_job.inj.madx"], stdout=devnull, cwd="model").wait()
-            Popen([MADX, "run_job.hl16_nominal.madx"], stdout=devnull, cwd="model").wait()
+            Popen([MADX, "run_job.hl16_nominal.madx"], stdout=devnull, cwd=f"model{MODEL_NUMBER}").wait()
 
 
             
 def run_madx(q1_errors: Q1Pairs, q2_errors: Q2Pairs):
     print("running madx")
 
-    q2_errors.write_errors_to_file("model/errors_Q2.madx")
-    q1_errors.write_errors_to_file("model/errors_Q1.madx")
+    q2_errors.write_errors_to_file(f"model{MODEL_NUMBER}/errors_Q2.madx")
+    q1_errors.write_errors_to_file(f"model{MODEL_NUMBER}/errors_Q1.madx")
 
     if not q1_errors.check_correctability():
         raise CorrectabilityError([x.real_error for x in q1_errors.cold_masses])
@@ -674,9 +684,9 @@ def run_madx(q1_errors: Q1Pairs, q2_errors: Q2Pairs):
         raise CorrectabilityError([x.real_error for x in q2_errors.cold_masses])
 
     #template_file = open("job.inj.madx", "r")
-    #jobfile = open("model/run_job.inj.madx", "w")
+    #jobfile = open(f"model{MODEL_NUMBER}/run_job.inj.madx", "w")
     template_file = open("job.hl16_nominal_thin.madx", "r")
-    jobfile = open("model/run_job.hl16_nominal_thin.madx", "w")
+    jobfile = open(f"model{MODEL_NUMBER}/run_job.hl16_nominal_thin.madx", "w")
     jobfile.write(template_file.read().replace("_TRACK_", "0")) # no tracking
     template_file.close()
     jobfile.close()
@@ -686,7 +696,7 @@ def run_madx(q1_errors: Q1Pairs, q2_errors: Q2Pairs):
 
     with open(os.devnull, "w") as devnull:
         #Popen([MADX, "run_job.inj.madx"], stdout=devnull, cwd="model").wait()
-        Popen([MADX, "run_job.hl16_nominal_thin.madx"], stdout=devnull, cwd="model").wait()
+        Popen([MADX, "run_job.hl16_nominal_thin.madx"], stdout=devnull, cwd=f"model{MODEL_NUMBER}").wait()
 
     if not os.path.exists(f"{MODEL_TWISS}"):
         raise RuntimeError("twiss_err_b1.tfs does not exist")
