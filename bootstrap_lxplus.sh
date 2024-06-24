@@ -46,6 +46,10 @@ mkdir model
 cd model
 ln -s ${MAGNET_SORTING}/macros macros
 git clone ssh://git@gitlab.cern.ch:7999/acc-models/acc-models-lhc.git
+if [[ ! -d acc-models-lhc ]]; then
+    echo "please make sure  you correctly added you ssh key:"
+    echo '  eval "$(ssh-agent -s)"'
+    echo '  ssh-add ~/.ssh/id_ed25519'
 cd acc-models-lhc
 git checkout hl16
 touch knobs.madx
