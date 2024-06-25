@@ -26,6 +26,7 @@ if [[ ! -d venv${LINUX_VERSION} ]]; then
 fi
 . venv${LINUX_VERSION}/bin/activate
 
+pip remove servicex
 pip install matplotlib numpy
 #pip install 'pandas~=1.0'
 #pip install 'idna==2.10'
@@ -38,7 +39,7 @@ if [[ ! -d omc3 ]]; then
 
     cd ..
 fi
-#pip install -e omc3
+pip install -e omc3
 
 # --- setup model output ---------------------------------------------------------------------------
 mkdir model

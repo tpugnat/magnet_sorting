@@ -26,7 +26,8 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # path to madx executable
 #MADX = "/home/awegsche/programs/madx/madx-gnu64"
-MADX = "/home/thpugnat/Documents/CERN/madx"
+#MADX = "/home/thpugnat/Documents/CERN/madx"
+MADX = "madx"
 
 # path to twiss output
 MODEL_NUMBER= "_lxplus1"
@@ -62,9 +63,9 @@ DO_CORR = True
 
 # error specification, this has to be kept up to date with estimations from Massimo and Ezio 
 # (initially AMP_REAL_ERROR = 50 , AMP_MEAS_ERROR = 2)
-AMP_MEAS_ERROR = 15; # 25; # 15;
-AMP_CALI_ERROR = 0;
-AMP_PRES_ERROR = 0;
+AMP_MEAS_ERROR = 10; # 25; # 15;
+AMP_CALI_ERROR = 0; #5; #
+AMP_PRES_ERROR = 0; #1; #
 STAGE = 2;
 
 
@@ -101,20 +102,27 @@ def main():
     """
     if not os.path.exists(f"model/"):
         raise FileNotFoundError("could not find model/")
-    generate_optic()
     
-    if not os.path.exists(f"model{MODEL_NUMBER}/") and MODEL_NUMBER:
+    if not os.path.exists(f"model{MODEL_NUMBER}/"):
         os.makedirs(f"model{MODEL_NUMBER}/")
         cwd = os.getcwd()
         os.symlink(Path(cwd,'model/acc-models-lhc'), f"model{MODEL_NUMBER}/acc-models-lhc")
         os.symlink(Path(cwd,'macros'), f"model{MODEL_NUMBER}/macros")
+        system(f"touch model{MODEL_NUMBER}/knobs.madx")
         
+    generate_optic()
 
     summ = Summary()
 
+    try:
+        optic_without_error = tfs.read('model1_ft/twiss_elements.dat')
+    except:
+        print('WARNING: No twiss file found for the sorting of the magnet. The betas will be set to 1.')
+        optic_without_error = None
+
     for i in range(MAX_SIMS):
         summ.final_seed = (MAX_SIMS==i+1)
-        do_analysis(summ)
+        do_analysis(summ, optic_without_error=optic_without_error)
         print(summ)
 
         if FLAG_DEBUG:
@@ -331,7 +339,7 @@ total           : {total:5}
 
 
 # ---- ANALYSIS ------------------------------------------------------------------------------------
-def do_analysis(summ: Summary):
+def do_analysis(summ: Summary, optic_without_error = None):
     """ runs a full analysis, e.g. 
     - runs madx and measures bbeat before and after corrs with initial distribution
     - does the sorting, according to certain criteria
@@ -341,14 +349,14 @@ def do_analysis(summ: Summary):
     # Fix the seed random generator per seed
     #np.random.seed(summ.total())
     
-    try:
-        #optic_without_error = tfs.read('model1/twiss_elements.dat')
-        optic_without_error = tfs.read('model1_ft/twiss_elements.dat')
-        #print(optic_without_error)
-        #print(optic_without_error.columns)
-    except:
-        print('WARNING: No twiss file found for the sorting of the magnet. The betas will be set to 1.')
-        optic_without_error = None
+#     try:
+#         #optic_without_error = tfs.read('model1/twiss_elements.dat')
+#         optic_without_error = tfs.read('model1_ft/twiss_elements.dat')
+#         #print(optic_without_error)
+#         #print(optic_without_error.columns)
+#     except:
+#         print('WARNING: No twiss file found for the sorting of the magnet. The betas will be set to 1.')
+#         optic_without_error = None
 
     #q2_errors = Q2Pairs(10,2, optic = optic_without_error)
     #q1_errors = Q1Pairs(10,2, optic = optic_without_error)
@@ -668,10 +676,19 @@ def generate_optic():
 
         # remove twiss output, its existance after running madx indicates success
         system(f"rm {MODEL_TWISS}")
+        system(f"touch model{MODEL_NUMBER}/knobs.madx")
 
         with open(os.devnull, "w") as devnull:
             #Popen([MADX, "run_job.inj.madx"], stdout=devnull, cwd="model").wait()
             Popen([MADX, "run_job.hl16_nominal.madx"], stdout=devnull, cwd=f"model{MODEL_NUMBER}").wait()
+        system(f"rm model{MODEL_NUMBER}*.*")
+        system(f"touch model{MODEL_NUMBER}/knobs.madx")
+
+    if not os.path.exists("model1_ft/acc-models-lhc") or not os.path.exists("model1_ft/macros"): 
+        cwd = os.getcwd()
+        os.symlink(Path(cwd,'model/acc-models-lhc'), "model1_ft/acc-models-lhc")
+        os.symlink(Path(cwd,'macros'), "model1_ft/macros")
+        system(f"touch model1_ft/knobs.madx")
 
 
             
@@ -739,12 +756,22 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
     if DO_MADX:
         run_madx(q1_errors, q2_errors)
 
+    if MODEL_NUMBER:
+        if not os.path.exists(f"model1_ft{MODEL_NUMBER}"):
+            os.makedirs(f"model1_ft{MODEL_NUMBER}/")
+            cwd = os.getcwd()
+            os.symlink(Path(cwd,'model/acc-models-lhc'), f"model1_ft{MODEL_NUMBER}/acc-models-lhc")
+            os.symlink(Path(cwd,'macros'), f"model1_ft{MODEL_NUMBER}/macros")
+            system(f"touch model1_ft{MODEL_NUMBER}/knobs.madx")
+        system(f"cp model1_ft/*.* model1_ft{MODEL_NUMBER}/")
+            
+
     accel_params = dict(
         accel="lhc",
         year="hl16", # to be checked
         beam=1,
         #model_dir=Path("model1").absolute(),
-        model_dir=Path("model1_ft").absolute(),
+        model_dir=Path(f"model1_ft{MODEL_NUMBER}").absolute(),
             )
 
 
@@ -752,7 +779,7 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
         print("creating response entrypoint")
         create_response_entrypoint(
             #outfile_path=Path("model1/FullResponse.h5"),
-            outfile_path=Path("model1_ft/FullResponse.h5"),
+            outfile_path=Path(f"model1_ft{MODEL_NUMBER}/FullResponse.h5"),
             creator="madx",
             optics_params=['PHASEX', 'PHASEY', 'BETX', 'BETY', 'Q'],
             variable_categories=VAR_CATS,
@@ -764,35 +791,42 @@ def do_sim(q1_errors: Q1Pairs, q2_errors: Q2Pairs) -> Tuple[float, float, float]
     # fake measurement
     fake_measurement(twiss=MODEL_TWISS,
                      #model="model1/twiss.dat",
-                     model="model1_ft/twiss.dat",
-                     outputdir="fake_measurements")
+                     model=f"model1_ft{MODEL_NUMBER}/twiss.dat",
+                     outputdir=f"fake_measurements{MODEL_NUMBER}")
 
 
     if DO_CORR:
         print("running global correction")
         global_correction.global_correction_entrypoint(
-            meas_dir="fake_measurements",
-            output_dir="global_corrections",
+            meas_dir=f"fake_measurements{MODEL_NUMBER}",
+            output_dir=f"global_corrections{MODEL_NUMBER}",
             #fullresponse_path="model1/FullResponse.h5",
-            fullresponse_path="model1_ft/FullResponse.h5",
+            fullresponse_path=f"model1_ft{MODEL_NUMBER}/FullResponse.h5",
             iterations=1,
             optics_params=['PHASEX', 'PHASEY', 'BETX', 'BETY', 'Q'],
             variable_categories=VAR_CATS,
             **accel_params,
                 )
         #system("cp scripts_global_corrs/rerun.job.madx global_corrections/rerun.job.madx")
-        system("cp scripts_global_corrs/rerun.job.hl16_nominal_thin.madx global_corrections/rerun.job.madx")
+        system(f"cp scripts_global_corrs/rerun.job.hl16_nominal_thin.madx global_corrections{MODEL_NUMBER}/rerun.job.madx")
+        if MODEL_NUMBER:
+            system(f"mv global_corrections{MODEL_NUMBER}/rerun.job.madx global_corrections{MODEL_NUMBER}/rerun_ref.job.madx")
+            template_file = open(f"global_corrections{MODEL_NUMBER}/rerun_ref.job.madx", "r")
+            jobfile = open(f"global_corrections{MODEL_NUMBER}/rerun.job.madx", "w")
+            jobfile.write(template_file.read().replace("../global_corrections/", f"../global_corrections{MODEL_NUMBER}/")) # no tracking
+            template_file.close()
+            jobfile.close()
         with open(os.devnull, "w") as devnull:
-            Popen([MADX, "rerun.job.madx"], cwd="global_corrections", stdout=devnull).wait()
+            Popen([MADX, "rerun.job.madx"], cwd=f"global_corrections{MODEL_NUMBER}", stdout=devnull).wait()
 
 
 
 
     # compare
-    check_twiss = tfs.read("global_corrections/twiss_global_b1.tfs")
+    check_twiss = tfs.read(f"global_corrections{MODEL_NUMBER}/twiss_global_b1.tfs")
     err_twiss   = tfs.read(MODEL_TWISS)
     #model_twiss = tfs.read("model1/twiss.dat")
-    model_twiss = tfs.read("model1_ft/twiss.dat")
+    model_twiss = tfs.read(f"model1_ft{MODEL_NUMBER}/twiss.dat")
     
     mask_check_monitor = mask_monitor(check_twiss)
     mask_err_monitor   = mask_monitor(  err_twiss)
@@ -1093,110 +1127,110 @@ def prepare_data_for_analysis(q1_errors, q2_errors):
     analysis_data_q1 = {'id': q1_errors.selected_permutation}
     analysis_data_q2 = {'id': q2_errors.selected_permutation}
     
-    (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_meas(with_calibration=False)
-    (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_meas(with_calibration=False)
-    BETX = q1_BETX + q2_BETX
-    BETY = q1_BETY + q2_BETY
+    #(q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_meas(with_calibration=False)
+    #(q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_meas(with_calibration=False)
+    #BETX = q1_BETX + q2_BETX
+    #BETY = q1_BETY + q2_BETY
     
-    analysis_data_q2['meanBETX'] = analysis_data_q1['meanBETX'] = np.average(BETX)
-    analysis_data_q2['meanBETY'] = analysis_data_q1['meanBETY'] = np.average(BETY)
+    #analysis_data_q2['meanBETX'] = analysis_data_q1['meanBETX'] = np.average(BETX)
+    #analysis_data_q2['meanBETY'] = analysis_data_q1['meanBETY'] = np.average(BETY)
 
-    analysis_data_q2['rmsBETX']  = analysis_data_q1['rmsBETX']  = rms(BETX)
-    analysis_data_q2['rmsBETY']  = analysis_data_q1['rmsBETY']  = rms(BETY)
+    #analysis_data_q2['rmsBETX']  = analysis_data_q1['rmsBETX']  = rms(BETX)
+    #analysis_data_q2['rmsBETY']  = analysis_data_q1['rmsBETY']  = rms(BETY)
     
-    analysis_data_q2['rmsBETXY'] = analysis_data_q1['rmsBETXY'] = np.sqrt(rms(BETX)**2 + rms(BETY)**2)
+    #analysis_data_q2['rmsBETXY'] = analysis_data_q1['rmsBETXY'] = np.sqrt(rms(BETX)**2 + rms(BETY)**2)
     
-    analysis_data_q2['maxBETX']  = analysis_data_q1['maxBETX']  = max(abs(BETX))
-    analysis_data_q2['maxBETY']  = analysis_data_q1['maxBETY']  = max(abs(BETY))
+    #analysis_data_q2['maxBETX']  = analysis_data_q1['maxBETX']  = max(abs(BETX))
+    #analysis_data_q2['maxBETY']  = analysis_data_q1['maxBETY']  = max(abs(BETY))
     
-    #analysis_data_q2['maxBETXY'] = analysis_data_q1['maxBETXY'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
+    ##analysis_data_q2['maxBETXY'] = analysis_data_q1['maxBETXY'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
     
-    (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_meas(with_calibration=False)
-    (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_meas(with_calibration=False)
-    DQX = q1_DQX + q2_DQX
-    DQY = q1_DQY + q2_DQY
-    analysis_data_q2['DQX']  = analysis_data_q1['DQX']  = DQX
-    analysis_data_q2['DQY']  = analysis_data_q1['DQY']  = DQY
+    #(q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_meas(with_calibration=False)
+    #(q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_meas(with_calibration=False)
+    #DQX = q1_DQX + q2_DQX
+    #DQY = q1_DQY + q2_DQY
+    #analysis_data_q2['DQX']  = analysis_data_q1['DQX']  = DQX
+    #analysis_data_q2['DQY']  = analysis_data_q1['DQY']  = DQY
  
     
-    (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_meas(with_calibration=True)
-    (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_meas(with_calibration=True)
-    BETX = q1_BETX + q2_BETX
-    BETY = q1_BETY + q2_BETY
+    #(q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_meas(with_calibration=True)
+    #(q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_meas(with_calibration=True)
+    #BETX = q1_BETX + q2_BETX
+    #BETY = q1_BETY + q2_BETY
     
-    analysis_data_q2['meanBETX_wcor'] = analysis_data_q1['meanBETX_wcor'] = np.average(BETX)
-    analysis_data_q2['meanBETY_wcor'] = analysis_data_q1['meanBETY_wcor'] = np.average(BETY)
+    #analysis_data_q2['meanBETX_wcor'] = analysis_data_q1['meanBETX_wcor'] = np.average(BETX)
+    #analysis_data_q2['meanBETY_wcor'] = analysis_data_q1['meanBETY_wcor'] = np.average(BETY)
 
-    analysis_data_q2['rmsBETX_wcor']  = analysis_data_q1['rmsBETX_wcor']  = rms(BETX)
-    analysis_data_q2['rmsBETY_wcor']  = analysis_data_q1['rmsBETY_wcor']  = rms(BETY)
+    #analysis_data_q2['rmsBETX_wcor']  = analysis_data_q1['rmsBETX_wcor']  = rms(BETX)
+    #analysis_data_q2['rmsBETY_wcor']  = analysis_data_q1['rmsBETY_wcor']  = rms(BETY)
     
-    analysis_data_q2['rmsBETXY_wcor'] = analysis_data_q1['rmsBETXY_wcor'] = np.sqrt(rms(BETX)**2 + rms(BETY)**2)
+    #analysis_data_q2['rmsBETXY_wcor'] = analysis_data_q1['rmsBETXY_wcor'] = np.sqrt(rms(BETX)**2 + rms(BETY)**2)
     
-    analysis_data_q2['maxBETX_wcor']  = analysis_data_q1['maxBETX_wcor']  = max(abs(BETX))
-    analysis_data_q2['maxBETY_wcor']  = analysis_data_q1['maxBETY_wcor']  = max(abs(BETY))
+    #analysis_data_q2['maxBETX_wcor']  = analysis_data_q1['maxBETX_wcor']  = max(abs(BETX))
+    #analysis_data_q2['maxBETY_wcor']  = analysis_data_q1['maxBETY_wcor']  = max(abs(BETY))
     
-    #analysis_data_q2['maxBETXY_wcor'] = analysis_data_q1['maxBETXY_wcor'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
+    ##analysis_data_q2['maxBETXY_wcor'] = analysis_data_q1['maxBETXY_wcor'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
             
-    (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_meas(with_calibration=True)
-    (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_meas(with_calibration=True)
-    DQX = q1_DQX + q2_DQX
-    DQY = q1_DQY + q2_DQY
-    analysis_data_q2['DQX_wcor']  = analysis_data_q1['DQX_wcor']  = DQX
-    analysis_data_q2['DQY_wcor']  = analysis_data_q1['DQY_wcor']  = DQY
+    #(q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_meas(with_calibration=True)
+    #(q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_meas(with_calibration=True)
+    #DQX = q1_DQX + q2_DQX
+    #DQY = q1_DQY + q2_DQY
+    #analysis_data_q2['DQX_wcor']  = analysis_data_q1['DQX_wcor']  = DQX
+    #analysis_data_q2['DQY_wcor']  = analysis_data_q1['DQY_wcor']  = DQY
     
     
-#     for lab,withcal in zip([0,1],[False,True]):
-#         (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_meas(with_calibration=withcal)
-#         (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_meas(with_calibration=withcal)
-#         BETX = q1_BETX + q2_BETX
-#         BETY = q1_BETY + q2_BETY
+    for lab,withcal in zip([0,1],[False,True]):
+        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_meas(with_calibration=withcal)
+        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_meas(with_calibration=withcal)
+        BETX = q1_BETX + q2_BETX
+        BETY = q1_BETY + q2_BETY
 
-#         (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_meas(with_calibration=withcal)
-#         (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_meas(with_calibration=withcal)
-#         DQX = q1_DQX + q2_DQX
-#         DQY = q1_DQY + q2_DQY
+        (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_meas(with_calibration=withcal)
+        (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_meas(with_calibration=withcal)
+        DQX = q1_DQX + q2_DQX
+        DQY = q1_DQY + q2_DQY
 
-#         analysis_data_q2[f'meanBETX_TEmeas_TC{lab}'] = analysis_data_q1[f'meanBETX_TEmeas_TC{lab}'] = np.average(BETX)
-#         analysis_data_q2[f'meanBETY_TEmeas_TC{lab}'] = analysis_data_q1[f'meanBETY_TEmeas_TC{lab}'] = np.average(BETY)
+        analysis_data_q2[f'meanBETX_TEmeas_TC{lab}'] = analysis_data_q1[f'meanBETX_TEmeas_TC{lab}'] = np.average(BETX)
+        analysis_data_q2[f'meanBETY_TEmeas_TC{lab}'] = analysis_data_q1[f'meanBETY_TEmeas_TC{lab}'] = np.average(BETY)
 
-#         analysis_data_q2[f'rmsBETX_TEmeas_TC{lab}']  = analysis_data_q1[f'rmsBETX_TEmeas_TC{lab}']  = rms(BETX)
-#         analysis_data_q2[f'rmsBETY_TEmeas_TC{lab}']  = analysis_data_q1[f'rmsBETY_TEmeas_TC{lab}']  = rms(BETY)
+        analysis_data_q2[f'rmsBETX_TEmeas_TC{lab}']  = analysis_data_q1[f'rmsBETX_TEmeas_TC{lab}']  = rms(BETX)
+        analysis_data_q2[f'rmsBETY_TEmeas_TC{lab}']  = analysis_data_q1[f'rmsBETY_TEmeas_TC{lab}']  = rms(BETY)
 
-#         analysis_data_q2[f'rmsBETXY_TEmeas_TC{lab}'] = analysis_data_q1[f'rmsBETXY_TEmeas_TC{lab}'] = np.sqrt(rms(BETX)**2 + rms(BETY)**2)
+        analysis_data_q2[f'rmsBETXY_TEmeas_TC{lab}'] = analysis_data_q1[f'rmsBETXY_TEmeas_TC{lab}'] = np.sqrt(rms(BETX)**2 + rms(BETY)**2)
 
-#         analysis_data_q2[f'maxBETX_TEmeas_TC{lab}']  = analysis_data_q1[f'maxBETX_TEmeas_TC{lab}']  = max(abs(BETX))
-#         analysis_data_q2[f'maxBETY_TEmeas_TC{lab}']  = analysis_data_q1[f'maxBETY_TEmeas_TC{lab}']  = max(abs(BETY))
+        analysis_data_q2[f'maxBETX_TEmeas_TC{lab}']  = analysis_data_q1[f'maxBETX_TEmeas_TC{lab}']  = max(abs(BETX))
+        analysis_data_q2[f'maxBETY_TEmeas_TC{lab}']  = analysis_data_q1[f'maxBETY_TEmeas_TC{lab}']  = max(abs(BETY))
 
-#         #analysis_data_q2['maxBETXY_TEmeas_TC{lab}'] = analysis_data_q1['maxBETXY_TEmeas_TC{lab}'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
-#         analysis_data_q2[f'DQX_TEmeas_TC{lab}']  = analysis_data_q1[f'DQX_TEmeas_TC{lab}']  = DQX
-#         analysis_data_q2[f'DQY_TEmeas_TC{lab}']  = analysis_data_q1[f'DQY_TEmeas_TC{lab}']  = DQY
+        #analysis_data_q2['maxBETXY_TEmeas_TC{lab}'] = analysis_data_q1['maxBETXY_TEmeas_TC{lab}'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
+        analysis_data_q2[f'DQX_TEmeas_TC{lab}']  = analysis_data_q1[f'DQX_TEmeas_TC{lab}']  = DQX
+        analysis_data_q2[f'DQY_TEmeas_TC{lab}']  = analysis_data_q1[f'DQY_TEmeas_TC{lab}']  = DQY
     
     
-#     for lab,withcal in zip([0,1,2],[False,True,True]):
-#         (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real(with_calibration=withcal, type_pair_calibration=lab)
-#         (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real(with_calibration=withcal, type_pair_calibration=lab)
-#         BETX = q1_BETX + q2_BETX
-#         BETY = q1_BETY + q2_BETY
+    for lab,withcal in zip([0,1,2],[False,True,True]):
+        (q1_BETX, q1_BETY) = q1_errors.get_generated_betabeating_real(with_calibration=withcal, type_pair_calibration=lab)
+        (q2_BETX, q2_BETY) = q2_errors.get_generated_betabeating_real(with_calibration=withcal, type_pair_calibration=lab)
+        BETX = q1_BETX + q2_BETX
+        BETY = q1_BETY + q2_BETY
 
-#         (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_real(with_calibration=withcal, type_pair_calibration=lab)
-#         (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_real(with_calibration=withcal, type_pair_calibration=lab)
-#         DQX = q1_DQX + q2_DQX
-#         DQY = q1_DQY + q2_DQY
+        (q1_DQX, q1_DQY) = q1_errors.get_generated_tuneshift_real(with_calibration=withcal, type_pair_calibration=lab)
+        (q2_DQX, q2_DQY) = q2_errors.get_generated_tuneshift_real(with_calibration=withcal, type_pair_calibration=lab)
+        DQX = q1_DQX + q2_DQX
+        DQY = q1_DQY + q2_DQY
 
-#         analysis_data_q2[f'meanBETX_TEreal_TC{lab}'] = analysis_data_q1[f'meanBETX_TEreal_TC{lab}'] = np.average(BETX)
-#         analysis_data_q2[f'meanBETY_TEreal_TC{lab}'] = analysis_data_q1[f'meanBETY_TEreal_TC{lab}'] = np.average(BETY)
+        analysis_data_q2[f'meanBETX_TEreal_TC{lab}'] = analysis_data_q1[f'meanBETX_TEreal_TC{lab}'] = np.average(BETX)
+        analysis_data_q2[f'meanBETY_TEreal_TC{lab}'] = analysis_data_q1[f'meanBETY_TEreal_TC{lab}'] = np.average(BETY)
 
-#         analysis_data_q2[f'rmsBETX_TEreal_TC{lab}']  = analysis_data_q1[f'rmsBETX_TEreal_TC{lab}']  = rms(BETX)
-#         analysis_data_q2[f'rmsBETY_TEreal_TC{lab}']  = analysis_data_q1[f'rmsBETY_TEreal_TC{lab}']  = rms(BETY)
+        analysis_data_q2[f'rmsBETX_TEreal_TC{lab}']  = analysis_data_q1[f'rmsBETX_TEreal_TC{lab}']  = rms(BETX)
+        analysis_data_q2[f'rmsBETY_TEreal_TC{lab}']  = analysis_data_q1[f'rmsBETY_TEreal_TC{lab}']  = rms(BETY)
 
-#         analysis_data_q2[f'rmsBETXY_TEreal_TC{lab}'] = analysis_data_q1[f'rmsBETXY_TEreal_TC{lab}'] = np.sqrt(rms(BETX)**2 + rms(BETY)**2)
+        analysis_data_q2[f'rmsBETXY_TEreal_TC{lab}'] = analysis_data_q1[f'rmsBETXY_TEreal_TC{lab}'] = np.sqrt(rms(BETX)**2 + rms(BETY)**2)
 
-#         analysis_data_q2[f'maxBETX_TEreal_TC{lab}']  = analysis_data_q1[f'maxBETX_TEreal_TC{lab}']  = max(abs(BETX))
-#         analysis_data_q2[f'maxBETY_TEreal_TC{lab}']  = analysis_data_q1[f'maxBETY_TEreal_TC{lab}']  = max(abs(BETY))
+        analysis_data_q2[f'maxBETX_TEreal_TC{lab}']  = analysis_data_q1[f'maxBETX_TEreal_TC{lab}']  = max(abs(BETX))
+        analysis_data_q2[f'maxBETY_TEreal_TC{lab}']  = analysis_data_q1[f'maxBETY_TEreal_TC{lab}']  = max(abs(BETY))
 
-#         #analysis_data_q2['maxBETXY_TEreal_TC{lab}'] = analysis_data_q1['maxBETXY_TEreal_TC{lab}'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
-#         analysis_data_q2[f'DQX_TEreal_TC{lab}']  = analysis_data_q1[f'DQX_TEreal_TC{lab}']  = DQX
-#         analysis_data_q2[f'DQY_TEreal_TC{lab}']  = analysis_data_q1[f'DQY_TEreal_TC{lab}']  = DQY
+        #analysis_data_q2['maxBETXY_TEreal_TC{lab}'] = analysis_data_q1['maxBETXY_TEreal_TC{lab}'] = np.sqrt(max(abs(BETX))**2 + max(abs(BETY))**2)
+        analysis_data_q2[f'DQX_TEreal_TC{lab}']  = analysis_data_q1[f'DQX_TEreal_TC{lab}']  = DQX
+        analysis_data_q2[f'DQY_TEreal_TC{lab}']  = analysis_data_q1[f'DQY_TEreal_TC{lab}']  = DQY
     
     
     return analysis_data_q1,analysis_data_q2
