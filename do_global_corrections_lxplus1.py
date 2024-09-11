@@ -66,7 +66,7 @@ DO_CORR = True
 AMP_MEAS_ERROR = 10; # 25; # 15;
 AMP_CALI_ERROR = 0; #5; #
 AMP_PRES_ERROR = 0; #1; #
-STAGE = 2;
+STAGE = 1;
 
 
 # maximum number of simulations, `Ctrl-C` stops the program early
@@ -75,7 +75,7 @@ MAX_SIMS = 1000 #100 #1 #1000
 NUMB_PERMUT_CROSSSCORING = 100
 
 # some more constants
-WRITE_SUMMARY_REFRESH_FREQUENCY = 500
+WRITE_SUMMARY_REFRESH_FREQUENCY = 200
 #SUMM_PAIRING = "summ_pairing.tfs"
 #SUMM_SUM = "summ_sum.tfs"
 #SUMM_SUMBETA = "summ_sumbeta.tfs"
@@ -83,9 +83,9 @@ WRITE_SUMMARY_REFRESH_FREQUENCY = 500
 #SUMM_SUMBBEATING_V2 = "summ_sumbbeating_v2.tfs"
 
 if FLAG_WITH_calibration:
-    NAME_SAVEFILE_FORMAT = f"{TYPE_SCORE}_dist_m{AMP_MEAS_ERROR}u_{TYPE_RAND}_c{AMP_CALI_ERROR}u_p{AMP_PRES_ERROR}u_nbsimu{MAX_SIMS}_wcor_Phase{STAGE}"
+    NAME_SAVEFILE_FORMAT = f"{TYPE_SCORE}_dist_r{AMP_MEAS_ERROR}u_{TYPE_RAND}_c{AMP_CALI_ERROR}u_p{AMP_PRES_ERROR}u_nbsimu{MAX_SIMS}_wcor_Phase{STAGE}"
 else:
-    NAME_SAVEFILE_FORMAT = f"{TYPE_SCORE}_dist_m{AMP_MEAS_ERROR}u_{TYPE_RAND}_c{AMP_CALI_ERROR}u_p{AMP_PRES_ERROR}u_nbsimu{MAX_SIMS}_Phase{STAGE}"
+    NAME_SAVEFILE_FORMAT = f"{TYPE_SCORE}_dist_r{AMP_MEAS_ERROR}u_{TYPE_RAND}_c{AMP_CALI_ERROR}u_p{AMP_PRES_ERROR}u_nbsimu{MAX_SIMS}_Phase{STAGE}"
 SUMM_SUMBBEATING_V2 = f"summ_score_{NAME_SAVEFILE_FORMAT}.tfs"
 #SUMM_DIFF = "summ_diff.tfs"
 #SUMM_BBEAT = "summ_bbeat.tfs"
@@ -113,6 +113,11 @@ def main():
     generate_optic()
 
     summ = Summary()
+    MIN_SIMS=0
+    if os.path.exists(SUMM_SUMBBEATING_V2):
+        tmp = tfs.read(SUMM_SUMBBEATING_V2)
+        MIN_SIMS = max(tmp.SEED)
+        summ.previous_study = max(tmp.SEED)
 
     try:
         optic_without_error = tfs.read('model1_ft/twiss_elements.dat')
@@ -120,7 +125,7 @@ def main():
         print('WARNING: No twiss file found for the sorting of the magnet. The betas will be set to 1.')
         optic_without_error = None
 
-    for i in range(MAX_SIMS):
+    for i in range(MIN_SIMS,MAX_SIMS):
         summ.final_seed = (MAX_SIMS==i+1)
         do_analysis(summ, optic_without_error=optic_without_error)
         print(summ)
