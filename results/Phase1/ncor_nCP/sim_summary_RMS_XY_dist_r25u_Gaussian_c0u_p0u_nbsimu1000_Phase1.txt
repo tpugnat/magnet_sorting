@@ -1,0 +1,11 @@
+
+Simulation Summary
+==================
+not correctable :     0 (   0%)
+low beta beat   :     0 (   0%)
+general failed  :   436 (  44%)
+passed          :   564 (  56%)
+previous study  :     0 (   0%)
+--------------------------------
+total           :  1000
+
