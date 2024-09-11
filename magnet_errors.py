@@ -147,6 +147,7 @@ class MagnetError:
         self.meas_error: float = rand(ampl_meas, cut_3sigma= True)
         self.cali_error: float = ampl_cali
         self.pres_error: float = gauss3sc(ampl_prec, cut_3sigma= True)
+        self.meas_error: float = self.meas_error + self.cali_error + self.pres_error
 
     #def believed_error(self) -> float:
     #    return self.real_error + self.meas_error + SYST_ERROR
