@@ -114,7 +114,7 @@ class Q1Pairs(Pairs):
         # List allowed permutations
         self.stage = stage
         self.selected_permutation = 0
-        if stage == 1 or stage == 2:
+        if stage == 1 or stage == 2 or stage == 4:
             self.permutations = list(itertools.permutations(range(self.get_magnet_count()//2)))
         elif stage == 3:
             raise NotImplementedError("slhfe")
@@ -128,6 +128,26 @@ class Q1Pairs(Pairs):
     def get_magnet(self, index: int):
         """ returns a tuple (magnet_name, magnet_error) """
         return (MAGNETS[index], self[index])
+        
+    def set_magnets_meas_strength(self,strength_and_errors):
+        for idx,var in enumerate(strength_and_errors):
+            self.cold_masses[idx].set_meas_strength(*var)
+        self.update_pair_calibration()
+        
+    def set_meas_strength_no_cold_incertitudes_for_sorting(self,strength_and_errors):
+        for idx,var in enumerate(strength_and_errors):
+            self.cold_masses[idx].set_meas_strength_no_cold_incertitudes_for_sorting(*var)
+        self.update_pair_calibration()
+        
+    def set_meas_strength_no_cold_nor_unknown_incertitudes_for_sorting(self,strength_and_errors):
+        for idx,var in enumerate(strength_and_errors):
+            self.cold_masses[idx].set_meas_strength_no_cold_nor_unknown_incertitudes_for_sorting(*var)
+        self.update_pair_calibration()
+        
+    def set_magnets_real_strength(self,strength_and_errors):
+        for idx,var in enumerate(strength_and_errors):
+            self.cold_masses[idx].set_real_strength(*var)
+        self.update_pair_calibration()
 
     #def get_magnet_twiss(self, index: int):
     #    """ returns a tuple (magnet_name, betax, betay, sign) """

@@ -65,8 +65,8 @@ DO_CORR = True
 # (initially AMP_REAL_ERROR = 50 , AMP_MEAS_ERROR = 2)
 AMP_MEAS_ERROR = 10; # 25; # 15;
 AMP_CALI_ERROR = 0; #5; #
-AMP_PRES_ERROR = 0; #1; #
-STAGE = 1;
+AMP_PRES_ERROR = 1; #1; #
+STAGE = 2;
 
 
 # maximum number of simulations, `Ctrl-C` stops the program early

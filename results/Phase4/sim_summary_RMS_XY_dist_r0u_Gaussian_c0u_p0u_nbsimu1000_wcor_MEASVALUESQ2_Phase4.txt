@@ -1,0 +1,11 @@
+
+Simulation Summary
+==================
+not correctable :  1000 ( 100%)
+low beta beat   :     0 (   0%)
+general failed  :     0 (   0%)
+passed          :     0 (   0%)
+previous study  :     0 (   0%)
+--------------------------------
+total           :  1000
+

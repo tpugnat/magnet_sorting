@@ -115,6 +115,10 @@ class Q2Pairs(Pairs):
             self.permutations = [qq for qq in Q2_init if qq[1::2] in Q2B_allowed]
         elif stage == 3:
             raise NotImplementedError("slhfe")
+        elif stage == 4:
+            Q2_init = list(itertools.permutations(range(8)))
+            Q2B_allowed = list(itertools.permutations([2*ii+1 for ii in range(4)]))
+            self.permutations = [qq for qq in Q2_init if qq[5] == 5]
 
     def positions(self):
         return self.permutations[self.selected_permutation]
@@ -125,6 +129,26 @@ class Q2Pairs(Pairs):
     def get_magnet(self, index):
         """ returns a tuple (magnet_name, magnet_error) """
         return (MAGNETS[index], self[index])
+        
+    def set_magnets_meas_strength(self,strength_and_errors):
+        for idx,var in enumerate(strength_and_errors):
+            self.cold_masses[idx].set_meas_strength(*var)
+        self.update_pair_calibration()
+        
+    def set_meas_strength_no_cold_incertitudes_for_sorting(self,strength_and_errors):
+        for idx,var in enumerate(strength_and_errors):
+            self.cold_masses[idx].set_meas_strength_no_cold_incertitudes_for_sorting(*var)
+        self.update_pair_calibration()
+        
+    def set_meas_strength_no_cold_nor_unknown_incertitudes_for_sorting(self,strength_and_errors):
+        for idx,var in enumerate(strength_and_errors):
+            self.cold_masses[idx].set_meas_strength_no_cold_nor_unknown_incertitudes_for_sorting(*var)
+        self.update_pair_calibration()
+        
+    def set_magnets_real_strength(self,strength_and_errors):
+        for idx,var in enumerate(strength_and_errors):
+            self.cold_masses[idx].set_real_strength(*var)
+        self.update_pair_calibration()
 
     #def get_magnet_twiss(self, index: int):
     #    """ returns a tuple (magnet_name, betax, betay, sign) """

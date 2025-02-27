@@ -155,3 +155,48 @@ class MagnetError:
     @property
     def real_error(self) -> float:
         return self.meas_error - self.cali_error - self.pres_error
+    
+    def set_meas_strength(self,systematic,interval_random,type_random):
+        self.meas_error = systematic
+        self.cali_error = 0
+        if type_random == "uniform":
+            self.pres_error = uniform(interval_random)
+        elif type_random == "gaussian":
+            self.pres_error = gauss3sc(interval_random, cut_3sigma= True)
+        else:
+            raise ValueError(f"Wrong type of random generator: {type_random}")
+        self.meas_error = self.meas_error + self.cali_error + self.pres_error
+    
+    def set_meas_strength_no_cold_incertitudes_for_sorting(self,systematic,interval_random,type_random):
+        self.meas_error = systematic
+        self.cali_error = 0
+        if type_random == "uniform":
+            self.pres_error = uniform(interval_random)
+        elif type_random == "gaussian":
+            self.pres_error = gauss3sc(interval_random, cut_3sigma= True)
+        else:
+            raise ValueError(f"Wrong type of random generator: {type_random}")
+        if type_random == "uniform" or (type_random == "gaussian" and systematic == 0):
+            self.meas_error = self.meas_error + self.cali_error + self.pres_error
+    
+    def set_meas_strength_no_cold_nor_unknown_incertitudes_for_sorting(self,systematic,interval_random,type_random):
+        self.meas_error = systematic
+        self.cali_error = 0
+        if type_random == "uniform":
+            self.pres_error = uniform(interval_random)
+        elif type_random == "gaussian":
+            self.pres_error = gauss3sc(interval_random, cut_3sigma= True)
+        else:
+            raise ValueError(f"Wrong type of random generator: {type_random}")
+        if type_random == "uniform":
+            self.meas_error = self.meas_error + self.cali_error + self.pres_error
+    
+    def set_real_strength(self,systematic,interval_random,type_random):
+        self.meas_error = systematic
+        self.cali_error = 0
+        if type_random == "uniform":
+            self.pres_error = uniform(interval_random)
+        elif type_random == "gaussian":
+            self.pres_error = gauss3sc(interval_random, cut_3sigma= True)
+        else:
+            raise ValueError(f"Wrong type of random generator: {type_random}")
